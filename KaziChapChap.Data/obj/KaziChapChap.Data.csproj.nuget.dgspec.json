@@ -1,0 +1,118 @@
+{
+  "format": 1,
+  "restore": {
+    "/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Data/KaziChapChap.Data.csproj": {}
+  },
+  "projects": {
+    "/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Core/KaziChapChap.Core.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Core/KaziChapChap.Core.csproj",
+        "projectName": "KaziChapChap.Core",
+        "projectPath": "/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Core/KaziChapChap.Core.csproj",
+        "packagesPath": "/home/steve/.nuget/packages/",
+        "outputPath": "/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Core/obj/",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "/home/steve/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net7.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net7.0": {
+            "targetAlias": "net7.0",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        }
+      },
+      "frameworks": {
+        "net7.0": {
+          "targetAlias": "net7.0",
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/usr/lib/dotnet/sdk/7.0.119/RuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Data/KaziChapChap.Data.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Data/KaziChapChap.Data.csproj",
+        "projectName": "KaziChapChap.Data",
+        "projectPath": "/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Data/KaziChapChap.Data.csproj",
+        "packagesPath": "/home/steve/.nuget/packages/",
+        "outputPath": "/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Data/obj/",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "/home/steve/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net7.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net7.0": {
+            "targetAlias": "net7.0",
+            "projectReferences": {
+              "/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Core/KaziChapChap.Core.csproj": {
+                "projectPath": "/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Core/KaziChapChap.Core.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        }
+      },
+      "frameworks": {
+        "net7.0": {
+          "targetAlias": "net7.0",
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/usr/lib/dotnet/sdk/7.0.119/RuntimeIdentifierGraph.json"
+        }
+      }
+    }
+  }
+}

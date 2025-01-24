@@ -1,0 +1,15 @@
+/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Data/bin/Debug/net7.0/KaziChapChap.Data.deps.json
+/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Data/bin/Debug/net7.0/KaziChapChap.Data.dll
+/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Data/bin/Debug/net7.0/KaziChapChap.Data.pdb
+/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Data/bin/Debug/net7.0/KaziChapChap.Core.dll
+/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Data/bin/Debug/net7.0/KaziChapChap.Core.pdb
+/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Data/obj/Debug/net7.0/KaziChapChap.Data.csproj.AssemblyReference.cache
+/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Data/obj/Debug/net7.0/KaziChapChap.Data.GeneratedMSBuildEditorConfig.editorconfig
+/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Data/obj/Debug/net7.0/KaziChapChap.Data.AssemblyInfoInputs.cache
+/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Data/obj/Debug/net7.0/KaziChapChap.Data.AssemblyInfo.cs
+/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Data/obj/Debug/net7.0/KaziChapChap.Data.csproj.CoreCompileInputs.cache
+/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Data/obj/Debug/net7.0/KaziChapChap.Data.csproj.CopyComplete
+/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Data/obj/Debug/net7.0/KaziChapChap.Data.dll
+/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Data/obj/Debug/net7.0/refint/KaziChapChap.Data.dll
+/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Data/obj/Debug/net7.0/KaziChapChap.Data.pdb
+/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Data/obj/Debug/net7.0/ref/KaziChapChap.Data.dll

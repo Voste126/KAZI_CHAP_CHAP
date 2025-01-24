@@ -1,0 +1,12 @@
+/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Core/bin/Debug/net7.0/KaziChapChap.Core.deps.json
+/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Core/bin/Debug/net7.0/KaziChapChap.Core.dll
+/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Core/bin/Debug/net7.0/KaziChapChap.Core.pdb
+/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Core/obj/Debug/net7.0/KaziChapChap.Core.csproj.AssemblyReference.cache
+/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Core/obj/Debug/net7.0/KaziChapChap.Core.GeneratedMSBuildEditorConfig.editorconfig
+/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Core/obj/Debug/net7.0/KaziChapChap.Core.AssemblyInfoInputs.cache
+/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Core/obj/Debug/net7.0/KaziChapChap.Core.AssemblyInfo.cs
+/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Core/obj/Debug/net7.0/KaziChapChap.Core.csproj.CoreCompileInputs.cache
+/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Core/obj/Debug/net7.0/KaziChapChap.Core.dll
+/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Core/obj/Debug/net7.0/refint/KaziChapChap.Core.dll
+/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Core/obj/Debug/net7.0/KaziChapChap.Core.pdb
+/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Core/obj/Debug/net7.0/ref/KaziChapChap.Core.dll
