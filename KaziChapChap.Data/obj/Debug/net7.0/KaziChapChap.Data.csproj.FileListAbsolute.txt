@@ -13,3 +13,6 @@
 /home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Data/obj/Debug/net7.0/refint/KaziChapChap.Data.dll
 /home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Data/obj/Debug/net7.0/KaziChapChap.Data.pdb
 /home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Data/obj/Debug/net7.0/ref/KaziChapChap.Data.dll
+/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Data/bin/Debug/net7.0/KaziChapChap.Data.runtimeconfig.json
+/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Data/obj/Debug/net7.0/KaziChapChap.Data.genruntimeconfig.cache
+/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Data/bin/Debug/net7.0/appsettings.json
