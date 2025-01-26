@@ -1,11 +1,19 @@
+// using KaziChapChap.Core; // Ensure this is the correct namespace for IAuthService
+// using KaziChapChap.Data; // Ensure this is the correct namespace for AuthService and KaziDbContext
+// using Microsoft.EntityFrameworkCore;
+
 // var builder = WebApplication.CreateBuilder(args);
 
 // // Add services to the container.
-
 // builder.Services.AddControllers();
-// // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-// builder.Services.AddEndpointsApiExplorer();
 // builder.Services.AddSwaggerGen();
+
+// // Configure KaziDbContext with a connection string
+// builder.Services.AddDbContext<KaziDbContext>(options =>
+//     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// // Register AuthService
+// builder.Services.AddScoped<IAuthService, AuthService>();
 
 // var app = builder.Build();
 
@@ -16,6 +24,9 @@
 //     app.UseSwaggerUI();
 // }
 
+
+
+// // Later in the middleware pipeline
 // app.UseHttpsRedirection();
 
 // app.UseAuthorization();
@@ -41,6 +52,12 @@ builder.Services.AddDbContext<KaziDbContext>(options =>
 // Register AuthService
 builder.Services.AddScoped<IAuthService, AuthService>();
 
+// Configure HTTPS Redirection
+builder.Services.AddHttpsRedirection(options =>
+{
+    options.HttpsPort = 443; // Set the HTTPS port explicitly
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -50,10 +67,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
-
+app.UseHttpsRedirection(); // Enable HTTPS redirection
 app.UseAuthorization();
-
 app.MapControllers();
 
 app.Run();
