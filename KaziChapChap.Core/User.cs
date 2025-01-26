@@ -1,19 +1,20 @@
-﻿namespace KaziChapChap.Core;
+﻿using System;
+using System.Collections.Generic;
 
-public class User
+namespace KaziChapChap.Core.Models
 {
-    public int Id { get; set; }
-    public required string Email { get; set; }
-    public required string PasswordHash { get; set; }
-    public required string PasswordSalt { get; set; }
-}
+    public class User
+    {
+        public int UserID { get; set; }
+        public string? Email { get; set; }
+        public string? PasswordHash { get; set; }
+        public string? ResetToken { get; set; }
+        public DateTime? ResetTokenExpiry { get; set; }
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-
-// Interface for the Auth Service
-public interface IAuthService
-{
-    Task<User> Register(User user, string password);
-    Task<User> Login(string email, string password);
-    Task<bool> UserExists(string email);
-    Task<bool> ResetPassword(string email, string newPassword);
+        // Navigation properties
+        public ICollection<Expense> Expenses { get; set; } = new List<Expense>();
+        public ICollection<Budget> Budgets { get; set; } = new List<Budget>();
+        public ICollection<Notification> Notifications { get; set; } = new List<Notification>();
+    }
 }

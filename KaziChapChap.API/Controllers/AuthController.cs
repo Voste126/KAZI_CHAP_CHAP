@@ -1,4 +1,5 @@
-using KaziChapChap.Core; // Ensure this is the correct namespace for User and IAuthService
+using KaziChapChap.Core.Models; // Ensure this is the correct namespace for User
+using KaziChapChap.Core.Services; // Ensure this is the correct namespace for IAuthService
 using Microsoft.AspNetCore.Mvc;
 
 namespace KaziChapChap.API.Controllers
@@ -14,7 +15,6 @@ namespace KaziChapChap.API.Controllers
             _authService = authService;
         }
 
-        // Example action methods
         [HttpPost("register")]
         public async Task<IActionResult> Register(User user, string password)
         {

@@ -1,9 +1,11 @@
-﻿namespace KaziChapChap.Data
-{
-    using KaziChapChap.Core;
-    using System.Threading.Tasks;
-    using Microsoft.EntityFrameworkCore;
+﻿using System;
+using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
+using KaziChapChap.Core.Services;
+using KaziChapChap.Core.Models;
 
+namespace KaziChapChap.Data
+{
     public class AuthService : IAuthService
     {
         private readonly KaziDbContext _context;
@@ -24,7 +26,7 @@
         public async Task<User> Login(string email, string password)
         {
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
-            if (user == null || !VerifyPassword(user.PasswordHash, password))
+            if (user == null || user.PasswordHash == null || !VerifyPassword(user.PasswordHash, password))
             {
                 throw new UnauthorizedAccessException("Invalid credentials.");
             }
