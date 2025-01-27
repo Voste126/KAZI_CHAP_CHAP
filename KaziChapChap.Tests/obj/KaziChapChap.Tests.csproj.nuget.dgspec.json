@@ -4,14 +4,87 @@
     "/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Tests/KaziChapChap.Tests.csproj": {}
   },
   "projects": {
-    "/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Tests/KaziChapChap.Tests.csproj": {
+    "/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.API/KaziChapChap.API.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Tests/KaziChapChap.Tests.csproj",
-        "projectName": "KaziChapChap.Tests",
-        "projectPath": "/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Tests/KaziChapChap.Tests.csproj",
+        "projectUniqueName": "/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.API/KaziChapChap.API.csproj",
+        "projectName": "KaziChapChap.API",
+        "projectPath": "/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.API/KaziChapChap.API.csproj",
         "packagesPath": "/home/steve/.nuget/packages/",
-        "outputPath": "/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Tests/obj/",
+        "outputPath": "/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.API/obj/",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "/home/steve/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net7.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net7.0": {
+            "targetAlias": "net7.0",
+            "projectReferences": {
+              "/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Core/KaziChapChap.Core.csproj": {
+                "projectPath": "/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Core/KaziChapChap.Core.csproj"
+              },
+              "/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Data/KaziChapChap.Data.csproj": {
+                "projectPath": "/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Data/KaziChapChap.Data.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        }
+      },
+      "frameworks": {
+        "net7.0": {
+          "targetAlias": "net7.0",
+          "dependencies": {
+            "Microsoft.AspNetCore.OpenApi": {
+              "target": "Package",
+              "version": "[7.0.19, )"
+            },
+            "Swashbuckle.AspNetCore": {
+              "target": "Package",
+              "version": "[6.5.0, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.AspNetCore.App": {
+              "privateAssets": "none"
+            },
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/usr/lib/dotnet/sdk/7.0.119/RuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Core/KaziChapChap.Core.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Core/KaziChapChap.Core.csproj",
+        "projectName": "KaziChapChap.Core",
+        "projectPath": "/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Core/KaziChapChap.Core.csproj",
+        "packagesPath": "/home/steve/.nuget/packages/",
+        "outputPath": "/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Core/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "/home/steve/.nuget/NuGet/NuGet.Config"
@@ -38,6 +111,172 @@
         "net7.0": {
           "targetAlias": "net7.0",
           "dependencies": {
+            "Microsoft.EntityFrameworkCore.Abstractions": {
+              "target": "Package",
+              "version": "[7.0.0, )"
+            },
+            "Microsoft.EntityFrameworkCore.SqlServer": {
+              "target": "Package",
+              "version": "[7.0.0, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/usr/lib/dotnet/sdk/7.0.119/RuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Data/KaziChapChap.Data.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Data/KaziChapChap.Data.csproj",
+        "projectName": "KaziChapChap.Data",
+        "projectPath": "/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Data/KaziChapChap.Data.csproj",
+        "packagesPath": "/home/steve/.nuget/packages/",
+        "outputPath": "/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Data/obj/",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "/home/steve/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net7.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net7.0": {
+            "targetAlias": "net7.0",
+            "projectReferences": {
+              "/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Core/KaziChapChap.Core.csproj": {
+                "projectPath": "/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Core/KaziChapChap.Core.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        }
+      },
+      "frameworks": {
+        "net7.0": {
+          "targetAlias": "net7.0",
+          "dependencies": {
+            "Microsoft.EntityFrameworkCore": {
+              "target": "Package",
+              "version": "[7.0.0, )"
+            },
+            "Microsoft.EntityFrameworkCore.Design": {
+              "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[7.0.0, )"
+            },
+            "Microsoft.Extensions.Configuration": {
+              "target": "Package",
+              "version": "[9.0.1, )"
+            },
+            "Microsoft.Extensions.Configuration.Abstractions": {
+              "target": "Package",
+              "version": "[9.0.1, )"
+            },
+            "Microsoft.Extensions.Configuration.FileExtensions": {
+              "target": "Package",
+              "version": "[9.0.1, )"
+            },
+            "Microsoft.Extensions.Configuration.Json": {
+              "target": "Package",
+              "version": "[9.0.1, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/usr/lib/dotnet/sdk/7.0.119/RuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Tests/KaziChapChap.Tests.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Tests/KaziChapChap.Tests.csproj",
+        "projectName": "KaziChapChap.Tests",
+        "projectPath": "/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Tests/KaziChapChap.Tests.csproj",
+        "packagesPath": "/home/steve/.nuget/packages/",
+        "outputPath": "/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Tests/obj/",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "/home/steve/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net7.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net7.0": {
+            "targetAlias": "net7.0",
+            "projectReferences": {
+              "/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.API/KaziChapChap.API.csproj": {
+                "projectPath": "/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.API/KaziChapChap.API.csproj"
+              },
+              "/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Core/KaziChapChap.Core.csproj": {
+                "projectPath": "/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Core/KaziChapChap.Core.csproj"
+              },
+              "/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Data/KaziChapChap.Data.csproj": {
+                "projectPath": "/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Data/KaziChapChap.Data.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        }
+      },
+      "frameworks": {
+        "net7.0": {
+          "targetAlias": "net7.0",
+          "dependencies": {
+            "Microsoft.AspNetCore.Mvc.Core": {
+              "target": "Package",
+              "version": "[2.2.5, )"
+            },
+            "Microsoft.EntityFrameworkCore.InMemory": {
+              "target": "Package",
+              "version": "[7.0.0, )"
+            },
             "Microsoft.NET.Test.Sdk": {
               "target": "Package",
               "version": "[17.12.0, )"
