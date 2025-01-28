@@ -29,11 +29,14 @@ namespace KaziChapChap.API.Controllers
         /// <summary>
         /// Gets all notifications.
         /// </summary>
-        /// <returns>A list of notifications.</returns>
+        /// <returns>A list of notifications with user details.</returns>
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Notification>>> GetNotifications()
         {
-            return await _context.Notifications.ToListAsync();
+            return await _context.Notifications
+                .AsNoTracking()
+                .Include(n => n.User)
+                .ToListAsync();
         }
 
         /// <summary>
@@ -44,7 +47,10 @@ namespace KaziChapChap.API.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<Notification>> GetNotification(int id)
         {
-            var notification = await _context.Notifications.FindAsync(id);
+            var notification = await _context.Notifications
+                .AsNoTracking()
+                .Include(n => n.User)
+                .FirstOrDefaultAsync(n => n.NotificationID == id);
 
             if (notification == null)
             {
@@ -62,6 +68,13 @@ namespace KaziChapChap.API.Controllers
         [HttpPost]
         public async Task<ActionResult<Notification>> PostNotification(Notification notification)
         {
+            // Ensure the referenced User exists
+            var userExists = await _context.Users.AnyAsync(u => u.UserID == notification.UserID);
+            if (!userExists)
+            {
+                return BadRequest("Invalid UserID. User does not exist.");
+            }
+
             _context.Notifications.Add(notification);
             await _context.SaveChangesAsync();
 
@@ -79,7 +92,14 @@ namespace KaziChapChap.API.Controllers
         {
             if (id != notification.NotificationID)
             {
-                return BadRequest();
+                return BadRequest("Notification ID mismatch.");
+            }
+
+            // Ensure the referenced User exists
+            var userExists = await _context.Users.AnyAsync(u => u.UserID == notification.UserID);
+            if (!userExists)
+            {
+                return BadRequest("Invalid UserID. User does not exist.");
             }
 
             _context.Entry(notification).State = EntityState.Modified;
@@ -118,6 +138,26 @@ namespace KaziChapChap.API.Controllers
             }
 
             _context.Notifications.Remove(notification);
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
+
+        /// <summary>
+        /// Marks a notification as read.
+        /// </summary>
+        /// <param name="id">The ID of the notification.</param>
+        /// <returns>No content if successful.</returns>
+        [HttpPatch("{id}/mark-as-read")]
+        public async Task<IActionResult> MarkAsRead(int id)
+        {
+            var notification = await _context.Notifications.FindAsync(id);
+            if (notification == null)
+            {
+                return NotFound();
+            }
+
+            notification.IsRead = true;
             await _context.SaveChangesAsync();
 
             return NoContent();

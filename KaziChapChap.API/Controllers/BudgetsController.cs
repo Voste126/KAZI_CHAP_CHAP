@@ -82,7 +82,16 @@ namespace KaziChapChap.API.Controllers
                 return BadRequest();
             }
 
-            _context.Entry(budget).State = EntityState.Modified;
+            var existingBudget = await _context.Budgets.FindAsync(id);
+            if (existingBudget == null)
+            {
+                return NotFound();
+            }
+
+            // Manually update properties instead of attaching a new instance
+            existingBudget.Category = budget.Category;
+            existingBudget.Amount = budget.Amount;
+            existingBudget.MonthYear = budget.MonthYear;
 
             try
             {
@@ -90,7 +99,7 @@ namespace KaziChapChap.API.Controllers
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!_context.Budgets.Any(b => b.BudgetID == id))
+                if (!_context.Budgets.Any(e => e.BudgetID == id))
                 {
                     return NotFound();
                 }
@@ -102,6 +111,7 @@ namespace KaziChapChap.API.Controllers
 
             return NoContent();
         }
+
 
         /// <summary>
         /// Deletes a budget.

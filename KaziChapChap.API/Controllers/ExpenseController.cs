@@ -75,13 +75,20 @@ namespace KaziChapChap.API.Controllers
         /// <param name="expense">The updated expense data.</param>
         /// <returns>No content if successful.</returns>
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutExpense(int id, Expense expense)
+        public async Task<IActionResult> PutExpense(int id, Expense expense)  // <-- Change method name and parameter type
         {
             if (id != expense.ExpenseID)
             {
                 return BadRequest();
             }
 
+            var existingExpense = await _context.Expenses.FindAsync(id);
+            if (existingExpense == null)
+            {
+                return NotFound();
+            }
+
+            _context.Entry(existingExpense).State = EntityState.Detached; // <-- Fix: Detach the existing entity
             _context.Entry(expense).State = EntityState.Modified;
 
             try
@@ -102,6 +109,8 @@ namespace KaziChapChap.API.Controllers
 
             return NoContent();
         }
+
+
 
         /// <summary>
         /// Deletes an expense.
