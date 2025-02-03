@@ -78,9 +78,10 @@
 /home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.API/obj/Debug/net7.0/staticwebassets.build.json
 /home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.API/obj/Debug/net7.0/staticwebassets.development.json
 /home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.API/obj/Debug/net7.0/scopedcss/bundle/KaziChapChap.API.styles.css
-/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.API/obj/Debug/net7.0/KaziChapChap.API.csproj.CopyComplete
 /home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.API/obj/Debug/net7.0/KaziChapChap.API.dll
 /home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.API/obj/Debug/net7.0/refint/KaziChapChap.API.dll
 /home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.API/obj/Debug/net7.0/KaziChapChap.API.pdb
 /home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.API/obj/Debug/net7.0/KaziChapChap.API.genruntimeconfig.cache
 /home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.API/obj/Debug/net7.0/ref/KaziChapChap.API.dll
+/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.API/obj/Debug/net7.0/KaziChapChap.API.sourcelink.json
+/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.API/obj/Debug/net7.0/KaziChap.A0934846.Up2Date

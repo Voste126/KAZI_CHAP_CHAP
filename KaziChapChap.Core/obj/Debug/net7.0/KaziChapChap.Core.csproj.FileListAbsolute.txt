@@ -10,3 +10,4 @@
 /home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Core/obj/Debug/net7.0/refint/KaziChapChap.Core.dll
 /home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Core/obj/Debug/net7.0/KaziChapChap.Core.pdb
 /home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Core/obj/Debug/net7.0/ref/KaziChapChap.Core.dll
+/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Core/obj/Debug/net7.0/KaziChapChap.Core.sourcelink.json

@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "BInJLO9urj1oSTTVbkqJ9L7tXS1QDe+7XGpjjvISghtdzZg6O6hq8+e8e5bD61eyok7f5S45obdUd3dMX2Wx1A==",
+  "dgSpecHash": "b0eZKLScOzM=",
   "success": true,
   "projectFilePath": "/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Tests/KaziChapChap.Tests.csproj",
   "expectedPackageFiles": [
@@ -25,7 +25,7 @@
     "/home/steve/.nuget/packages/microsoft.aspnetcore.routing/2.2.0/microsoft.aspnetcore.routing.2.2.0.nupkg.sha512",
     "/home/steve/.nuget/packages/microsoft.aspnetcore.routing.abstractions/2.2.0/microsoft.aspnetcore.routing.abstractions.2.2.0.nupkg.sha512",
     "/home/steve/.nuget/packages/microsoft.aspnetcore.webutilities/2.2.0/microsoft.aspnetcore.webutilities.2.2.0.nupkg.sha512",
-    "/home/steve/.nuget/packages/microsoft.bcl.asyncinterfaces/9.0.1/microsoft.bcl.asyncinterfaces.9.0.1.nupkg.sha512",
+    "/home/steve/.nuget/packages/microsoft.bcl.asyncinterfaces/1.1.1/microsoft.bcl.asyncinterfaces.1.1.1.nupkg.sha512",
     "/home/steve/.nuget/packages/microsoft.codecoverage/17.12.0/microsoft.codecoverage.17.12.0.nupkg.sha512",
     "/home/steve/.nuget/packages/microsoft.csharp/4.5.0/microsoft.csharp.4.5.0.nupkg.sha512",
     "/home/steve/.nuget/packages/microsoft.data.sqlclient/5.0.1/microsoft.data.sqlclient.5.0.1.nupkg.sha512",
@@ -99,7 +99,7 @@
     "/home/steve/.nuget/packages/system.io.pipelines/9.0.1/system.io.pipelines.9.0.1.nupkg.sha512",
     "/home/steve/.nuget/packages/system.linq/4.1.0/system.linq.4.1.0.nupkg.sha512",
     "/home/steve/.nuget/packages/system.linq.expressions/4.1.0/system.linq.expressions.4.1.0.nupkg.sha512",
-    "/home/steve/.nuget/packages/system.memory/4.5.5/system.memory.4.5.5.nupkg.sha512",
+    "/home/steve/.nuget/packages/system.memory/4.5.4/system.memory.4.5.4.nupkg.sha512",
     "/home/steve/.nuget/packages/system.memory.data/1.0.2/system.memory.data.1.0.2.nupkg.sha512",
     "/home/steve/.nuget/packages/system.numerics.vectors/4.5.0/system.numerics.vectors.4.5.0.nupkg.sha512",
     "/home/steve/.nuget/packages/system.objectmodel/4.0.12/system.objectmodel.4.0.12.nupkg.sha512",
@@ -114,7 +114,6 @@
     "/home/steve/.nuget/packages/system.resources.resourcemanager/4.3.0/system.resources.resourcemanager.4.3.0.nupkg.sha512",
     "/home/steve/.nuget/packages/system.runtime/4.3.0/system.runtime.4.3.0.nupkg.sha512",
     "/home/steve/.nuget/packages/system.runtime.caching/5.0.0/system.runtime.caching.5.0.0.nupkg.sha512",
-    "/home/steve/.nuget/packages/system.runtime.compilerservices.unsafe/6.0.0/system.runtime.compilerservices.unsafe.6.0.0.nupkg.sha512",
     "/home/steve/.nuget/packages/system.runtime.extensions/4.1.0/system.runtime.extensions.4.1.0.nupkg.sha512",
     "/home/steve/.nuget/packages/system.runtime.handles/4.0.1/system.runtime.handles.4.0.1.nupkg.sha512",
     "/home/steve/.nuget/packages/system.runtime.interopservices/4.1.0/system.runtime.interopservices.4.1.0.nupkg.sha512",

@@ -749,7 +749,10 @@
           "Microsoft.EntityFrameworkCore.SqlServer": "7.0.0"
         },
         "runtime": {
-          "KaziChapChap.Core.dll": {}
+          "KaziChapChap.Core.dll": {
+            "assemblyVersion": "1.0.0",
+            "fileVersion": "1.0.0.0"
+          }
         }
       },
       "KaziChapChap.Data/1.0.0": {
@@ -762,7 +765,10 @@
           "Microsoft.Extensions.Configuration.Json": "9.0.1"
         },
         "runtime": {
-          "KaziChapChap.Data.dll": {}
+          "KaziChapChap.Data.dll": {
+            "assemblyVersion": "1.0.0",
+            "fileVersion": "1.0.0.0"
+          }
         }
       }
     }
