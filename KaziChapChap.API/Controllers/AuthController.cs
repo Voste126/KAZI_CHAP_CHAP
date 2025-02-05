@@ -1,6 +1,8 @@
-using KaziChapChap.Core.Models; // Ensure this is the correct namespace for User
-using KaziChapChap.Core.Services; // Ensure this is the correct namespace for IAuthService
+// Controllers/AuthController.cs
+using KaziChapChap.Core.Models;
+using KaziChapChap.Core.Services;
 using Microsoft.AspNetCore.Mvc;
+using System.Threading.Tasks;
 
 namespace KaziChapChap.API.Controllers
 {
@@ -9,27 +11,28 @@ namespace KaziChapChap.API.Controllers
     public class AuthController : ControllerBase
     {
         private readonly IAuthService _authService;
-
+        
         public AuthController(IAuthService authService)
         {
             _authService = authService;
         }
-
+        
         [HttpPost("register")]
-        public async Task<IActionResult> Register(User user, string password)
+        public async Task<IActionResult> Register([FromBody] RegistrationDto registrationDto)
         {
-            var registeredUser = await _authService.Register(user, password);
+            var user = new User { Email = registrationDto.Email };
+            var registeredUser = await _authService.Register(user, registrationDto.Password);
             if (registeredUser == null)
             {
                 return BadRequest("Registration failed.");
             }
             return Ok(registeredUser);
         }
-
+        
         [HttpPost("login")]
-        public async Task<IActionResult> Login(string email, string password)
+        public async Task<IActionResult> Login([FromBody] LoginDto loginDto)
         {
-            var user = await _authService.Login(email, password);
+            var user = await _authService.Login(loginDto.Email, loginDto.Password);
             if (user == null)
             {
                 return Unauthorized("Invalid credentials.");

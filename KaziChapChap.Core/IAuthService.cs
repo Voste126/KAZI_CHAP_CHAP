@@ -1,8 +1,9 @@
+// Services/IAuthService.cs
 using KaziChapChap.Core.Models;
+using System.Threading.Tasks;
+
 namespace KaziChapChap.Core.Services
 {
-    using System.Threading.Tasks;
-
     public interface IAuthService
     {
         Task<User> Register(User user, string password);
