@@ -83,7 +83,7 @@ if (!app.Environment.IsDevelopment())
 // Add Authentication middleware BEFORE Authorization
 app.UseAuthentication();
 app.UseAuthorization();
-
+app.UseMiddleware<RequestResponseLoggingMiddleware>();
 app.MapControllers();
 app.UseDefaultFiles();
 app.UseStaticFiles();

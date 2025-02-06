@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("KaziChapChap.Data")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+44701943b62f7e9062942543897aaabf02eb5b68")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+f69dbb52065fa32dd55401fefd01a1e76ef2fe8f")]
 [assembly: System.Reflection.AssemblyProductAttribute("KaziChapChap.Data")]
 [assembly: System.Reflection.AssemblyTitleAttribute("KaziChapChap.Data")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
