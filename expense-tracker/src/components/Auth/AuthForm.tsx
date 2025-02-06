@@ -10,6 +10,7 @@ import {
   Alert,
 } from '@mui/material';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 import API_URL from '../../utils/config';
 
 interface LoginDto {
@@ -37,6 +38,7 @@ const AuthForm: React.FC = () => {
   const [password, setPassword] = useState('');
   const [alertMsg, setAlertMsg] = useState<string | null>(null);
   const [alertSeverity, setAlertSeverity] = useState<'error' | 'success'>('success');
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,6 +58,9 @@ const AuthForm: React.FC = () => {
 
         // Save the JWT token in localStorage for later use
         localStorage.setItem('jwtToken', response.data.token);
+        
+        // Redirect to the Budget Manager page
+        navigate('/budget');
       } else {
         // Call the register endpoint
         const registrationDto: RegistrationDto = { email, password };
@@ -134,4 +139,5 @@ const AuthForm: React.FC = () => {
 };
 
 export default AuthForm;
+
 

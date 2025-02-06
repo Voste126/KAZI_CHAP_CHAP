@@ -1,5 +1,4 @@
 using Xunit;
-using Moq;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using KaziChapChap.API.Controllers;
@@ -8,6 +7,8 @@ using KaziChapChap.Data;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
+using System.Security.Claims;
 
 namespace KaziChapChap.Tests.Controllers
 {
@@ -23,12 +24,27 @@ namespace KaziChapChap.Tests.Controllers
             await context.Database.EnsureDeletedAsync();
             await context.Database.EnsureCreatedAsync();
 
-            // Seed data
-            context.Budgets.Add(new Budget { BudgetID = 1, UserID = 1, Category = "Food", Amount = 100.00m, MonthYear = new DateTime(2024, 1, 1) });
-            context.Budgets.Add(new Budget { BudgetID = 2, UserID = 2, Category = "Transport", Amount = 50.00m, MonthYear = new DateTime(2024, 2, 1) });
+            // Seed data (assumes these budgets belong to some users)
+            context.Budgets.Add(new Budget { BudgetID = 1, UserID = 1, Category = "Food", Amount = 100.00m, MonthYear = new System.DateTime(2024, 1, 1) });
+            context.Budgets.Add(new Budget { BudgetID = 2, UserID = 2, Category = "Transport", Amount = 50.00m, MonthYear = new System.DateTime(2024, 2, 1) });
             await context.SaveChangesAsync();
 
             return context;
+        }
+
+        private void SetDummyUser(BudgetsController controller, string userId = "1")
+        {
+            controller.ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    User = new ClaimsPrincipal(new ClaimsIdentity(new Claim[]
+                    {
+                        new Claim(ClaimTypes.Name, "testUser"),
+                        new Claim(ClaimTypes.NameIdentifier, userId)
+                    }, "TestAuthentication"))
+                }
+            };
         }
 
         [Fact]
@@ -37,6 +53,7 @@ namespace KaziChapChap.Tests.Controllers
             // Arrange
             var context = await GetDatabaseContext();
             var controller = new BudgetsController(context);
+            SetDummyUser(controller);
 
             // Act
             var result = await controller.GetBudgets();
@@ -53,6 +70,7 @@ namespace KaziChapChap.Tests.Controllers
             // Arrange
             var context = await GetDatabaseContext();
             var controller = new BudgetsController(context);
+            SetDummyUser(controller);
 
             // Act
             var result = await controller.GetBudget(1);
@@ -70,6 +88,7 @@ namespace KaziChapChap.Tests.Controllers
             // Arrange
             var context = await GetDatabaseContext();
             var controller = new BudgetsController(context);
+            SetDummyUser(controller);
 
             // Act
             var result = await controller.GetBudget(99);
@@ -84,7 +103,9 @@ namespace KaziChapChap.Tests.Controllers
             // Arrange
             var context = await GetDatabaseContext();
             var controller = new BudgetsController(context);
-            var newBudget = new Budget { BudgetID = 3, UserID = 3, Category = "Entertainment", Amount = 200.00m, MonthYear = new DateTime(2024, 3, 1) };
+            // Simulate authenticated user with ID "1"
+            SetDummyUser(controller, "1");
+            var newBudget = new Budget { BudgetID = 3, /* UserID will be overridden */ Category = "Entertainment", Amount = 200.00m, MonthYear = new System.DateTime(2024, 3, 1) };
 
             // Act
             var result = await controller.PostBudget(newBudget);
@@ -94,6 +115,8 @@ namespace KaziChapChap.Tests.Controllers
             var createdBudget = Assert.IsType<Budget>(actionResult.Value);
             Assert.Equal(3, createdBudget.BudgetID);
             Assert.Equal("Entertainment", createdBudget.Category);
+            // The UserID should now equal "1" (from the dummy user)
+            Assert.Equal(1, createdBudget.UserID);
         }
 
         [Fact]
@@ -102,7 +125,8 @@ namespace KaziChapChap.Tests.Controllers
             // Arrange
             var context = await GetDatabaseContext();
             var controller = new BudgetsController(context);
-            var updatedBudget = new Budget { BudgetID = 1, UserID = 1, Category = "Groceries", Amount = 120.00m, MonthYear = new DateTime(2024, 1, 1) };
+            SetDummyUser(controller);
+            var updatedBudget = new Budget { BudgetID = 1, UserID = 1, Category = "Groceries", Amount = 120.00m, MonthYear = new System.DateTime(2024, 1, 1) };
 
             // Act
             var result = await controller.PutBudget(1, updatedBudget);
@@ -122,7 +146,8 @@ namespace KaziChapChap.Tests.Controllers
             // Arrange
             var context = await GetDatabaseContext();
             var controller = new BudgetsController(context);
-            var updatedBudget = new Budget { BudgetID = 2, UserID = 2, Category = "Transport", Amount = 75.00m, MonthYear = new DateTime(2024, 2, 1) };
+            SetDummyUser(controller);
+            var updatedBudget = new Budget { BudgetID = 2, UserID = 2, Category = "Transport", Amount = 75.00m, MonthYear = new System.DateTime(2024, 2, 1) };
 
             // Act
             var result = await controller.PutBudget(1, updatedBudget);
@@ -137,7 +162,8 @@ namespace KaziChapChap.Tests.Controllers
             // Arrange
             var context = await GetDatabaseContext();
             var controller = new BudgetsController(context);
-            var updatedBudget = new Budget { BudgetID = 99, UserID = 3, Category = "Utilities", Amount = 60.00m, MonthYear = new DateTime(2024, 4, 1) };
+            SetDummyUser(controller);
+            var updatedBudget = new Budget { BudgetID = 99, UserID = 3, Category = "Utilities", Amount = 60.00m, MonthYear = new System.DateTime(2024, 4, 1) };
 
             // Act
             var result = await controller.PutBudget(99, updatedBudget);
@@ -152,6 +178,7 @@ namespace KaziChapChap.Tests.Controllers
             // Arrange
             var context = await GetDatabaseContext();
             var controller = new BudgetsController(context);
+            SetDummyUser(controller);
 
             // Act
             var result = await controller.DeleteBudget(1);
@@ -168,6 +195,7 @@ namespace KaziChapChap.Tests.Controllers
             // Arrange
             var context = await GetDatabaseContext();
             var controller = new BudgetsController(context);
+            SetDummyUser(controller);
 
             // Act
             var result = await controller.DeleteBudget(99);
@@ -177,3 +205,5 @@ namespace KaziChapChap.Tests.Controllers
         }
     }
 }
+
+

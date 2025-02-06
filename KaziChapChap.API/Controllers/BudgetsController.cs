@@ -1,10 +1,12 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using KaziChapChap.Core.Models; // Ensure this is the correct namespace for Budget
-using KaziChapChap.Data;
-using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
+using System.Collections.Generic;
+using KaziChapChap.Core.Models; // Budget model
+using KaziChapChap.Data;
 
 namespace KaziChapChap.API.Controllers
 {
@@ -13,6 +15,7 @@ namespace KaziChapChap.API.Controllers
     /// </summary>
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize] // Protect all endpoints with JWT authentication
     public class BudgetsController : ControllerBase
     {
         private readonly KaziDbContext _context;
@@ -62,6 +65,20 @@ namespace KaziChapChap.API.Controllers
         [HttpPost]
         public async Task<ActionResult<Budget>> PostBudget(Budget budget)
         {
+            // Get the authenticated user's ID from claims.
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            if (userIdClaim == null)
+            {
+                return Unauthorized();
+            }
+
+            // Override any provided UserID with the authenticated user's ID.
+            if (!int.TryParse(userIdClaim.Value, out int authenticatedUserId))
+            {
+                return Unauthorized();
+            }
+            budget.UserID = authenticatedUserId;
+
             _context.Budgets.Add(budget);
             await _context.SaveChangesAsync();
 
@@ -88,7 +105,7 @@ namespace KaziChapChap.API.Controllers
                 return NotFound();
             }
 
-            // Manually update properties instead of attaching a new instance
+            // Update allowed properties.
             existingBudget.Category = budget.Category;
             existingBudget.Amount = budget.Amount;
             existingBudget.MonthYear = budget.MonthYear;
@@ -112,7 +129,6 @@ namespace KaziChapChap.API.Controllers
             return NoContent();
         }
 
-
         /// <summary>
         /// Deletes a budget.
         /// </summary>
@@ -134,3 +150,4 @@ namespace KaziChapChap.API.Controllers
         }
     }
 }
+
