@@ -3,6 +3,12 @@ using KaziChapChap.Core.Models;
 using KaziChapChap.Core.Services;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
+using System.IdentityModel.Tokens.Jwt;
+using System.Text;
+using Microsoft.IdentityModel.Tokens;
+using System.Security.Claims;
+using Microsoft.Extensions.Configuration;
+using System;
 
 namespace KaziChapChap.API.Controllers
 {
@@ -11,12 +17,14 @@ namespace KaziChapChap.API.Controllers
     public class AuthController : ControllerBase
     {
         private readonly IAuthService _authService;
-        
-        public AuthController(IAuthService authService)
+        private readonly IConfiguration _configuration;
+
+        public AuthController(IAuthService authService, IConfiguration configuration)
         {
             _authService = authService;
+            _configuration = configuration;
         }
-        
+
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegistrationDto registrationDto)
         {
@@ -28,16 +36,45 @@ namespace KaziChapChap.API.Controllers
             }
             return Ok(registeredUser);
         }
-        
+
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginDto loginDto)
         {
+            // The AuthService.Login method should throw or return null for invalid credentials.
             var user = await _authService.Login(loginDto.Email, loginDto.Password);
             if (user == null)
             {
                 return Unauthorized("Invalid credentials.");
             }
-            return Ok(user);
+            // Generate JWT token
+            var token = GenerateJwtToken(user);
+            var response = new AuthenticationResponseDto { Token = token, User = user };
+            return Ok(response);
+        }
+
+        private string GenerateJwtToken(User user)
+        {
+            var tokenHandler = new JwtSecurityTokenHandler();
+            // Read the secret from configuration (e.g., appsettings.json or environment variables)
+            var secret = _configuration["Jwt:Secret"];
+            if (string.IsNullOrEmpty(secret))
+            {
+                throw new InvalidOperationException("JWT Secret is not configured.");
+            }
+            var key = Encoding.ASCII.GetBytes(secret);
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(new Claim[]
+                {
+                    new Claim(ClaimTypes.NameIdentifier, user.UserID.ToString()),
+                    new Claim(ClaimTypes.Email, user.Email ?? string.Empty)
+                }),
+                Expires = DateTime.UtcNow.AddHours(1),
+                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key),
+                                        SecurityAlgorithms.HmacSha256Signature)
+            };
+            var token = tokenHandler.CreateToken(tokenDescriptor);
+            return tokenHandler.WriteToken(token);
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using System;
+﻿// Data/AuthService.cs
+using System;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using KaziChapChap.Core.Services;
@@ -28,7 +29,8 @@ namespace KaziChapChap.Data
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
             if (user == null || user.PasswordHash == null || !VerifyPassword(user.PasswordHash, password))
             {
-                throw new UnauthorizedAccessException("Invalid credentials.");
+                // In a real application, you might return null or throw a specific exception.
+                throw new UnauthorizedAccessException("Invalid email or password.");
             }
             return user;
         }
@@ -52,14 +54,14 @@ namespace KaziChapChap.Data
 
         private static string HashPassword(string password)
         {
-            // Implement password hashing logic
-            return password; // Placeholder
+            // Implement proper password hashing (e.g., using BCrypt)
+            return password; // Placeholder for demonstration
         }
 
         private static bool VerifyPassword(string hashedPassword, string password)
         {
-            // Implement password verification logic
-            return hashedPassword == password; // Placeholder
+            // Implement proper verification logic
+            return hashedPassword == password; // Placeholder for demonstration
         }
     }
 }

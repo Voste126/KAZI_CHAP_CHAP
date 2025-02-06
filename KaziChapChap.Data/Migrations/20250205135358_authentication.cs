@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace KaziChapChap.Data.Migrations
 {
     /// <inheritdoc />
-    public partial class authentication : Migration
+    public partial class Authentication : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

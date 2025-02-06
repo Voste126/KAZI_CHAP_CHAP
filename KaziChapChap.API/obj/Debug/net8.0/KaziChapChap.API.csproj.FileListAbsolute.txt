@@ -87,3 +87,4 @@
 /home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.API/obj/Debug/net8.0/KaziChapChap.API.genruntimeconfig.cache
 /home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.API/obj/Debug/net8.0/ref/KaziChapChap.API.dll
 /home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.API/bin/Debug/net8.0/KaziChapChap.API.staticwebassets.runtime.json
+/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.API/bin/Debug/net8.0/Microsoft.AspNetCore.Authentication.JwtBearer.dll

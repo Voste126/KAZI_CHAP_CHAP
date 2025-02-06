@@ -13,7 +13,7 @@ namespace KaziChapChap.Data.Migrations
 {
     [DbContext(typeof(KaziDbContext))]
     [Migration("20250205135358_authentication")]
-    partial class authentication
+    partial class Authentication
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

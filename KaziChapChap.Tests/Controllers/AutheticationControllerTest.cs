@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Mvc;
 using Moq;
 using System.Threading.Tasks;
 using Xunit;
+using Microsoft.Extensions.Configuration;
+using System.Collections.Generic;
 
 namespace KaziChapChap.Tests.Controllers
 {
@@ -17,21 +19,32 @@ namespace KaziChapChap.Tests.Controllers
         public AuthenticationControllerTest()
         {
             _mockAuthService = new Mock<IAuthService>();
-            _controller = new AuthController(_mockAuthService.Object);
+            // Set up in-memory configuration with a dummy JWT secret key
+            var inMemorySettings = new Dictionary<string, string?> {
+                {"Jwt:Secret", "ThisIsASecretKeyForTesting123!"}
+            };
+
+            IConfiguration configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(inMemorySettings)
+                .Build();
+
+            _controller = new AuthController(_mockAuthService.Object, configuration);
         }
 
         [Fact]
         public async Task Register_ReturnsOkResult_WhenRegistrationIsSuccessful()
         {
             // Arrange
-            var registrationDto = new RegistrationDto 
-            { 
-                Email = "test@example.com", 
-                Password = "password" 
+            var registrationDto = new RegistrationDto
+            {
+                Email = "test@example.com",
+                Password = "password"
             };
             var user = new User { UserID = 1, Email = registrationDto.Email };
-            _mockAuthService.Setup(service => service.Register(It.Is<User>(u => u.Email == registrationDto.Email), registrationDto.Password))
-                            .ReturnsAsync(user);
+            _mockAuthService.Setup(service => service.Register(
+                It.Is<User>(u => u.Email == registrationDto.Email),
+                registrationDto.Password))
+                .ReturnsAsync(user);
 
             // Act
             var result = await _controller.Register(registrationDto);
@@ -46,13 +59,14 @@ namespace KaziChapChap.Tests.Controllers
         public async Task Register_ReturnsBadRequest_WhenRegistrationFails()
         {
             // Arrange
-            var registrationDto = new RegistrationDto 
-            { 
-                Email = "test@example.com", 
-                Password = "password" 
+            var registrationDto = new RegistrationDto
+            {
+                Email = "test@example.com",
+                Password = "password"
             };
-            _mockAuthService.Setup(service => service.Register(It.IsAny<User>(), registrationDto.Password))
-                            .ReturnsAsync((User)null!);
+            _mockAuthService.Setup(service => service.Register(
+                It.IsAny<User>(), registrationDto.Password))
+                .ReturnsAsync((User)null!);
 
             // Act
             var result = await _controller.Register(registrationDto);
@@ -63,38 +77,39 @@ namespace KaziChapChap.Tests.Controllers
         }
 
         [Fact]
-        public async Task Login_ReturnsOkResult_WhenLoginIsSuccessful()
+        public async Task Login_ReturnsOkResult_WithToken_WhenLoginIsSuccessful()
         {
             // Arrange
-            var loginDto = new LoginDto 
-            { 
-                Email = "test@example.com", 
-                Password = "password" 
+            var loginDto = new LoginDto
+            {
+                Email = "test@example.com",
+                Password = "password"
             };
             var user = new User { UserID = 1, Email = loginDto.Email };
             _mockAuthService.Setup(service => service.Login(loginDto.Email, loginDto.Password))
-                            .ReturnsAsync(user);
+                .ReturnsAsync(user);
 
             // Act
             var result = await _controller.Login(loginDto);
 
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
-            var returnValue = Assert.IsType<User>(okResult.Value);
-            Assert.Equal(user.Email, returnValue.Email);
+            var response = Assert.IsType<AuthenticationResponseDto>(okResult.Value);
+            Assert.False(string.IsNullOrEmpty(response.Token));
+            Assert.Equal(user.Email, response.User.Email);
         }
 
         [Fact]
         public async Task Login_ReturnsUnauthorized_WhenLoginFails()
         {
             // Arrange
-            var loginDto = new LoginDto 
-            { 
-                Email = "test@example.com", 
-                Password = "password" 
+            var loginDto = new LoginDto
+            {
+                Email = "test@example.com",
+                Password = "password"
             };
             _mockAuthService.Setup(service => service.Login(loginDto.Email, loginDto.Password))
-                            .ReturnsAsync((User)null!);
+                .ReturnsAsync((User)null!);
 
             // Act
             var result = await _controller.Login(loginDto);
@@ -105,3 +120,4 @@ namespace KaziChapChap.Tests.Controllers
         }
     }
 }
+
