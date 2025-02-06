@@ -22,6 +22,15 @@ interface RegistrationDto {
   password: string;
 }
 
+interface AuthenticationResponse {
+  token: string;
+  user: {
+    userID: number;
+    email: string;
+    // include any other user properties you need
+  };
+}
+
 const AuthForm: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
@@ -37,10 +46,16 @@ const AuthForm: React.FC = () => {
       if (isLogin) {
         // Call the login endpoint
         const loginDto: LoginDto = { email, password };
-        const response = await axios.post(`${API_URL}/api/auth/login`, loginDto);
+        const response = await axios.post<AuthenticationResponse>(
+          `${API_URL}/api/auth/login`,
+          loginDto
+        );
         setAlertSeverity('success');
         setAlertMsg('Login successful!');
         console.log('Login response:', response.data);
+
+        // Save the JWT token in localStorage for later use
+        localStorage.setItem('jwtToken', response.data.token);
       } else {
         // Call the register endpoint
         const registrationDto: RegistrationDto = { email, password };
@@ -119,3 +134,4 @@ const AuthForm: React.FC = () => {
 };
 
 export default AuthForm;
+
