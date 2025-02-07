@@ -1,10 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using KaziChapChap.Core.Models; // Ensure this is the correct namespace for Expense
+using KaziChapChap.Core.Models;
 using KaziChapChap.Data;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace KaziChapChap.API.Controllers
 {
@@ -13,34 +15,24 @@ namespace KaziChapChap.API.Controllers
     /// </summary>
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize] // Only authenticated users can access these endpoints
     public class ExpensesController : ControllerBase
     {
         private readonly KaziDbContext _context;
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="ExpensesController"/> class.
-        /// </summary>
-        /// <param name="context">The database context.</param>
         public ExpensesController(KaziDbContext context)
         {
             _context = context;
         }
 
-        /// <summary>
-        /// Gets all expenses.
-        /// </summary>
-        /// <returns>A list of expenses.</returns>
+        // GET: api/Expenses
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Expense>>> GetExpenses()
         {
             return await _context.Expenses.ToListAsync();
         }
 
-        /// <summary>
-        /// Gets a specific expense by ID.
-        /// </summary>
-        /// <param name="id">The ID of the expense.</param>
-        /// <returns>The expense with the specified ID.</returns>
+        // GET: api/Expenses/5
         [HttpGet("{id}")]
         public async Task<ActionResult<Expense>> GetExpense(int id)
         {
@@ -54,28 +46,29 @@ namespace KaziChapChap.API.Controllers
             return expense;
         }
 
-        /// <summary>
-        /// Creates a new expense.
-        /// </summary>
-        /// <param name="expense">The expense to create.</param>
-        /// <returns>The created expense.</returns>
+        // POST: api/Expenses
         [HttpPost]
         public async Task<ActionResult<Expense>> PostExpense(Expense expense)
         {
+            // Retrieve the authenticated user's ID from JWT claims.
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int authenticatedUserId))
+            {
+                return Unauthorized();
+            }
+
+            // Override any provided UserID with the authenticated user's ID.
+            expense.UserID = authenticatedUserId;
+
             _context.Expenses.Add(expense);
             await _context.SaveChangesAsync();
 
             return CreatedAtAction(nameof(GetExpense), new { id = expense.ExpenseID }, expense);
         }
 
-        /// <summary>
-        /// Updates an existing expense.
-        /// </summary>
-        /// <param name="id">The ID of the expense to update.</param>
-        /// <param name="expense">The updated expense data.</param>
-        /// <returns>No content if successful.</returns>
+        // PUT: api/Expenses/5
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutExpense(int id, Expense expense)  // <-- Change method name and parameter type
+        public async Task<IActionResult> PutExpense(int id, Expense expense)
         {
             if (id != expense.ExpenseID)
             {
@@ -88,8 +81,8 @@ namespace KaziChapChap.API.Controllers
                 return NotFound();
             }
 
-            _context.Entry(existingExpense).State = EntityState.Detached; // <-- Fix: Detach the existing entity
-            _context.Entry(expense).State = EntityState.Modified;
+            // Update the tracked entity’s values with those from the incoming object.
+            _context.Entry(existingExpense).CurrentValues.SetValues(expense);
 
             try
             {
@@ -110,13 +103,7 @@ namespace KaziChapChap.API.Controllers
             return NoContent();
         }
 
-
-
-        /// <summary>
-        /// Deletes an expense.
-        /// </summary>
-        /// <param name="id">The ID of the expense to delete.</param>
-        /// <returns>No content if successful.</returns>
+        // DELETE: api/Expenses/5
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteExpense(int id)
         {
@@ -133,3 +120,4 @@ namespace KaziChapChap.API.Controllers
         }
     }
 }
+

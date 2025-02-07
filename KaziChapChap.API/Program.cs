@@ -27,9 +27,9 @@ builder.Services.AddCors(options =>
     options.AddPolicy("DevelopmentCorsPolicy", policyBuilder =>
     {
         policyBuilder.WithOrigins("http://localhost:5173", "https://localhost:5173")
-                    .AllowAnyHeader()
-                    .AllowAnyMethod()
-                    .AllowCredentials();
+                     .AllowAnyHeader()
+                     .AllowAnyMethod()
+                     .AllowCredentials();
     });
 });
 
@@ -44,13 +44,29 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             throw new InvalidOperationException("JWT Secret is not configured.");
         }
 
-        var key = Encoding.UTF8.GetBytes(secret);
+        // Decode the secret from Base64
+        byte[] keyBytes;
+        try
+        {
+            keyBytes = Convert.FromBase64String(secret);
+        }
+        catch (FormatException ex)
+        {
+            throw new InvalidOperationException("JWT Secret is not a valid Base64 string.", ex);
+        }
+
+        // Ensure the key length is at least 32 bytes (256 bits)
+        if (keyBytes.Length < 32)
+        {
+            throw new InvalidOperationException("JWT Secret must be at least 256 bits (32 bytes) long.");
+        }
+
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(key),
-            ValidateIssuer = false, // For simplicity; in production, consider validating issuer
-            ValidateAudience = false, // For simplicity; in production, consider validating audience
+            IssuerSigningKey = new SymmetricSecurityKey(keyBytes),
+            ValidateIssuer = false,      // For simplicity; in production, consider validating issuer
+            ValidateAudience = false,    // For simplicity; in production, consider validating audience
             ClockSkew = TimeSpan.Zero
         };
     });
@@ -84,8 +100,10 @@ if (!app.Environment.IsDevelopment())
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseMiddleware<RequestResponseLoggingMiddleware>();
+
 app.MapControllers();
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
 app.Run();
+

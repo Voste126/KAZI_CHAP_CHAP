@@ -4,11 +4,11 @@ using KaziChapChap.Core.Services;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
 using System.IdentityModel.Tokens.Jwt;
+using System;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
 using Microsoft.Extensions.Configuration;
-using System;
 
 namespace KaziChapChap.API.Controllers
 {
@@ -61,7 +61,12 @@ namespace KaziChapChap.API.Controllers
             {
                 throw new InvalidOperationException("JWT Secret is not configured.");
             }
-            var key = Encoding.ASCII.GetBytes(secret);
+            // Decode the secret from Base64 (make sure your secret in configuration is Base64-encoded)
+            var key = Convert.FromBase64String(secret);
+            if (key.Length < 32)
+            {
+                throw new InvalidOperationException("JWT Secret key must be at least 256 bits (32 bytes) long.");
+            }
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(new Claim[]
@@ -70,6 +75,8 @@ namespace KaziChapChap.API.Controllers
                     new Claim(ClaimTypes.Email, user.Email ?? string.Empty)
                 }),
                 Expires = DateTime.UtcNow.AddHours(1),
+                Issuer = _configuration["Jwt:Issuer"],
+                Audience = _configuration["Jwt:Audience"],
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key),
                                         SecurityAlgorithms.HmacSha256Signature)
             };

@@ -169,3 +169,5 @@
 /home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Tests/obj/Debug/net8.0/KaziChapChap.Tests.pdb
 /home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Tests/obj/Debug/net8.0/KaziChapChap.Tests.genruntimeconfig.cache
 /home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Tests/obj/Debug/net8.0/ref/KaziChapChap.Tests.dll
+/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Tests/bin/Debug/net8.0/KaziChapChap.API.staticwebassets.runtime.json
+/home/steve/SOLOMVP/KAZI_CHAP_CHAP/KaziChapChap.Tests/bin/Debug/net8.0/Microsoft.AspNetCore.Authentication.JwtBearer.dll
