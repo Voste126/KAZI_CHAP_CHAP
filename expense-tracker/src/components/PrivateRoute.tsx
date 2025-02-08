@@ -1,9 +1,9 @@
 import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+
 
 const PrivateRoute: React.FC = () => {
-    const { token } = useAuth();
+    const token  = localStorage.getItem('jwtToken');
 
     if (!token) {
         return <Navigate to="/login" />;

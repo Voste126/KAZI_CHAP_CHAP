@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 
-import Dashboard from './pages/Dashboard';
+// import myDashboard from './pages/Dashboard';
 import AuthForm from './components/Auth/AuthForm';
 import NotFound from './pages/NotFound';
-import BudgetManager from './components/BudgetManager';
+import Dashboard from './components/BudgetManager';
 import ExpensesList from './components/ExpenseList';
 import ExpenseForm from './components/ExpenseForm';
+import Home from './pages/Home';
+import VisualCharts from './components/visualCharts';
 
 const App: React.FC = () => {
     const [token] = useState<string | null>(localStorage.getItem('jwtToken'));
@@ -25,10 +27,12 @@ const App: React.FC = () => {
     <Router>
       <Routes>
         {/* Public Routes */}
-        <Route path="/" element={<Dashboard />} />
+        {/* <Route path="/dashboard" element={Dashboard} /> */}
         <Route path="/auth" element={<AuthForm />} />
         <Route path="/login" element={<AuthForm  />} />
-        <Route path="/budget" element={<BudgetManager />} />
+        <Route path="/budget" element={<Dashboard />} />
+        <Route path="/" element={<Home />} />
+        <Route path="/visual" element={<VisualCharts />} />
 
         {/* Protected Routes */}
         {token ? (

@@ -1,74 +1,229 @@
-// src/components/AuthForm.tsx
+// src/components/Auth/AuthForm.tsx
 import React, { useState } from 'react';
 import {
   Container,
+  Paper,
+  Tabs,
+  Tab,
+  Box,
   TextField,
   Button,
-  Typography,
-  Paper,
-  Grid,
   Alert,
+  Divider,
+  CssBaseline,
 } from '@mui/material';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import API_URL from '../../utils/config';
 
-interface LoginDto {
-  email: string;
-  password: string;
-}
-
-interface RegistrationDto {
-  email: string;
-  password: string;
-}
+// Theme colors
+const themeColors = {
+  primary: '#006400',   // Dark Green
+  secondary: '#8B4513', // Saddle Brown
+  background: '#F5F5DC',// Beige
+  text: '#2F4F4F',      // Dark Slate Gray
+  accent: '#FFD700',    // Gold
+};
 
 interface AuthenticationResponse {
   token: string;
   user: {
     userID: number;
     email: string;
-    // include any other user properties you need
   };
 }
 
+interface TabPanelProps {
+  children?: React.ReactNode;
+  value: number;
+  index: number;
+}
+
+const TabPanel: React.FC<TabPanelProps> = ({ children, value, index, ...other }) => {
+  return (
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`auth-tabpanel-${index}`}
+      aria-labelledby={`auth-tab-${index}`}
+      {...other}
+    >
+      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
+    </div>
+  );
+};
+
+interface LoginFormProps {
+  email: string;
+  setEmail: (val: string) => void;
+  password: string;
+  setPassword: (val: string) => void;
+  handleSubmit: (e: React.FormEvent) => void;
+}
+
+const LoginForm: React.FC<LoginFormProps> = React.memo(
+  ({ email, setEmail, password, setPassword, handleSubmit }) => {
+    return (
+      <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 1 }}>
+        <TextField
+          label="Email"
+          type="email"
+          fullWidth
+          margin="normal"
+          required
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          variant="outlined"
+          InputLabelProps={{ shrink: true }}
+        />
+        <TextField
+          label="Password"
+          type="password"
+          fullWidth
+          margin="normal"
+          required
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          variant="outlined"
+          InputLabelProps={{ shrink: true }}
+        />
+        <Button
+          type="submit"
+          variant="contained"
+          fullWidth
+          sx={{
+            mt: 2,
+            backgroundColor: themeColors.primary,
+            color: themeColors.background,
+            '&:hover': { backgroundColor: themeColors.secondary },
+          }}
+        >
+          Login
+        </Button>
+      </Box>
+    );
+  }
+);
+
+interface RegisterFormProps {
+  email: string;
+  setEmail: (val: string) => void;
+  password: string;
+  setPassword: (val: string) => void;
+  confirmPassword: string;
+  setConfirmPassword: (val: string) => void;
+  handleSubmit: (e: React.FormEvent) => void;
+}
+
+const RegisterForm: React.FC<RegisterFormProps> = React.memo(
+  ({ email, setEmail, password, setPassword, confirmPassword, setConfirmPassword, handleSubmit }) => {
+    return (
+      <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 1 }}>
+        <TextField
+          label="Email"
+          type="email"
+          fullWidth
+          margin="normal"
+          required
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          variant="outlined"
+          InputLabelProps={{ shrink: true }}
+        />
+        <TextField
+          label="Password"
+          type="password"
+          fullWidth
+          margin="normal"
+          required
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          variant="outlined"
+          InputLabelProps={{ shrink: true }}
+        />
+        <TextField
+          label="Confirm Password"
+          type="password"
+          fullWidth
+          margin="normal"
+          required
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+          variant="outlined"
+          InputLabelProps={{ shrink: true }}
+        />
+        <Button
+          type="submit"
+          variant="contained"
+          fullWidth
+          sx={{
+            mt: 2,
+            backgroundColor: themeColors.primary,
+            color: themeColors.background,
+            '&:hover': { backgroundColor: themeColors.secondary },
+          }}
+        >
+          Register
+        </Button>
+      </Box>
+    );
+  }
+);
+
 const AuthForm: React.FC = () => {
-  const [isLogin, setIsLogin] = useState(true);
+  const navigate = useNavigate();
+  // activeTab: 0 for Login, 1 for Register
+  const [activeTab, setActiveTab] = useState(0);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [alertMsg, setAlertMsg] = useState<string | null>(null);
   const [alertSeverity, setAlertSeverity] = useState<'error' | 'success'>('success');
-  const navigate = useNavigate();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
+    setActiveTab(newValue);
+    setAlertMsg(null);
+  };
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setAlertMsg(null);
-
     try {
-      if (isLogin) {
-        // Call the login endpoint
-        const loginDto: LoginDto = { email, password };
-        const response = await axios.post<AuthenticationResponse>(
-          `${API_URL}/api/auth/login`,
-          loginDto
-        );
-        setAlertSeverity('success');
-        setAlertMsg('Login successful!');
-        console.log('Login response:', response.data);
-
-        // Save the JWT token in localStorage for later use
-        localStorage.setItem('jwtToken', response.data.token);
-        
-        // Redirect to the Budget Manager page
-        navigate('/budget');
+      const response = await axios.post<AuthenticationResponse>(
+        `${API_URL}/api/auth/login`,
+        { email, password }
+      );
+      setAlertSeverity('success');
+      setAlertMsg('Login successful!');
+      localStorage.setItem('jwtToken', response.data.token);
+      navigate('/'); // Redirect to dashboard or home page
+    } catch (err: unknown) {
+      setAlertSeverity('error');
+      if (axios.isAxiosError(err) && err.response && err.response.data) {
+        setAlertMsg(err.response.data);
       } else {
-        // Call the register endpoint
-        const registrationDto: RegistrationDto = { email, password };
-        const response = await axios.post(`${API_URL}/api/auth/register`, registrationDto);
-        setAlertSeverity('success');
-        setAlertMsg('Registration successful!');
-        console.log('Registration response:', response.data);
+        setAlertMsg('An error occurred. Please try again.');
       }
+    }
+  };
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAlertMsg(null);
+    if (password !== confirmPassword) {
+      setAlertSeverity('error');
+      setAlertMsg('Passwords do not match.');
+      return;
+    }
+    try {
+      await axios.post(`${API_URL}/api/auth/register`, { email, password });
+      setAlertSeverity('success');
+      setAlertMsg('Registration successful! Please login.');
+      // Clear fields and switch to Login tab
+      setEmail('');
+      setPassword('');
+      setConfirmPassword('');
+      setActiveTab(0);
     } catch (err: unknown) {
       setAlertSeverity('error');
       if (axios.isAxiosError(err) && err.response && err.response.data) {
@@ -80,64 +235,69 @@ const AuthForm: React.FC = () => {
   };
 
   return (
-    <Container maxWidth="sm">
-      <Paper sx={{ padding: 3, marginTop: 5 }}>
-        <Typography variant="h4" gutterBottom>
-          {isLogin ? 'Login' : 'Register'}
-        </Typography>
-        {alertMsg && (
-          <Alert severity={alertSeverity} sx={{ marginBottom: 2 }}>
-            {alertMsg}
-          </Alert>
-        )}
-        <form onSubmit={handleSubmit}>
-          <TextField
-            label="Email"
-            type="email"
-            fullWidth
-            margin="normal"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-          <TextField
-            label="Password"
-            type="password"
-            fullWidth
-            margin="normal"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-          <Button
-            type="submit"
-            variant="contained"
-            color="primary"
-            fullWidth
-            sx={{ marginTop: 2 }}
+    <>
+      <CssBaseline />
+      <Container
+        maxWidth="sm"
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: '100vh',
+          background: `linear-gradient(135deg, ${themeColors.primary} 0%, ${themeColors.accent} 100%)`,
+        }}
+      >
+        <Paper sx={{ width: '100%', borderRadius: 2, boxShadow: 6, overflow: 'hidden' }}>
+          <Tabs
+            value={activeTab}
+            onChange={handleTabChange}
+            variant="fullWidth"
+            sx={{
+              '& .MuiTabs-indicator': {
+                backgroundColor: themeColors.secondary,
+              },
+              color: themeColors.primary,
+            }}
           >
-            {isLogin ? 'Login' : 'Register'}
-          </Button>
-          <Grid container justifyContent="flex-end" sx={{ marginTop: 1 }}>
-            <Grid item>
-              <Button
-                onClick={() => {
-                  setIsLogin(!isLogin);
-                  setAlertMsg(null);
-                }}
-              >
-                {isLogin
-                  ? "Don't have an account? Register"
-                  : 'Already have an account? Login'}
-              </Button>
-            </Grid>
-          </Grid>
-        </form>
-      </Paper>
-    </Container>
+            <Tab label="Login" />
+            <Tab label="Register" />
+          </Tabs>
+          {alertMsg && (
+            <Alert severity={alertSeverity} sx={{ mx: 2, mt: 2 }}>
+              {alertMsg}
+            </Alert>
+          )}
+          <Divider />
+          <TabPanel value={activeTab} index={0}>
+            <LoginForm
+              email={email}
+              setEmail={setEmail}
+              password={password}
+              setPassword={setPassword}
+              handleSubmit={handleLogin}
+            />
+          </TabPanel>
+          <TabPanel value={activeTab} index={1}>
+            <RegisterForm
+              email={email}
+              setEmail={setEmail}
+              password={password}
+              setPassword={setPassword}
+              confirmPassword={confirmPassword}
+              setConfirmPassword={setConfirmPassword}
+              handleSubmit={handleRegister}
+            />
+          </TabPanel>
+        </Paper>
+      </Container>
+    </>
   );
 };
 
 export default AuthForm;
+
+
+
+
 
 

@@ -1,5 +1,5 @@
 // Dashboard
-const Dashboard = () => {
+const myDashboard = () => {
     return (
         <div>
             <h1>Dashboard</h1>
@@ -7,4 +7,4 @@ const Dashboard = () => {
         </div>
     );
 }
-export default Dashboard;
+export default myDashboard;
