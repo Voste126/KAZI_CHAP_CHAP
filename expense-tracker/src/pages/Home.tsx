@@ -20,6 +20,7 @@ import Analyticsimage from '../assets/Visuanalytics.png';
 import Authenticationimage from '../assets/userauth.png';
 import DataExportimage from '../assets/csv.png';
 import Navbar from '../components/Navbar';
+import About from '../pages/About';
 
 // Define your theme colors
 const themeColors = {
@@ -195,17 +196,7 @@ const Home: React.FC = () => {
           </Grid>
         </Container>
 
-        {/* About Us Section */}
-        <Container sx={{ py: 4 }}>
-          <Typography variant="h4" align="center" sx={{ color: themeColors.primary, mb: 4 }}>
-            About Us
-          </Typography>
-          <Typography variant="body1" align="center" sx={{ color: themeColors.text }}>
-            At KAZI CHAP CHAP, we are committed to simplifying personal finance management. Our platform
-            allows you to log expenses, manage budgets, and analyze spending patterns easily. We believe
-            in empowering you to make informed financial decisions.
-          </Typography>
-        </Container>
+        <About />
 
         {/* Footer */}
         <Box sx={{ backgroundColor: '#f5f5f5', py: 2, textAlign: 'center' }}>

@@ -192,6 +192,9 @@ const VisualCharts: React.FC = () => {
             <Button color="inherit" onClick={() => navigate('/expenses')}>
               Expenses
             </Button>
+            <Button color="inherit" onClick={() => navigate('/')}>
+              Home
+            </Button>
           </Toolbar>
         </AppBar>
 
