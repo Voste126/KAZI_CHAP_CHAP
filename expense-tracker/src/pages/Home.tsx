@@ -1,4 +1,4 @@
-// src/components/Home.tsx
+// src/pages/Home.tsx
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -13,14 +13,15 @@ import {
   CardContent,
   CardActions,
 } from '@mui/material';
-import heroImage from '../assets/boygirl.jpeg'; 
+import heroImage from '../assets/boygirl.jpeg';
 import Expenseimage from '../assets/expenselogging.png';
 import Budgetimage from '../assets/budgetmanage.png';
 import Analyticsimage from '../assets/Visuanalytics.png';
 import Authenticationimage from '../assets/userauth.png';
 import DataExportimage from '../assets/csv.png';
+import Navbar from '../components/Navbar';
 
-// Define your theme colors (adjust as needed)
+// Define your theme colors
 const themeColors = {
   primary: '#006400',   // Dark Green
   secondary: '#8B4513', // Saddle Brown
@@ -34,7 +35,7 @@ const features = [
     title: 'Expense Logging',
     description:
       'Easily add, edit, and delete expenses. Keep track of every transaction and analyze your spending.',
-    image: Expenseimage, // Replace with your image or asset
+    image: Expenseimage,
     buttonText: 'Learn More',
     buttonLink: '/expenses',
   },
@@ -42,7 +43,7 @@ const features = [
     title: 'Budget Management',
     description:
       'Set monthly budgets and get alerts when you exceed them. Stay on top of your finances.',
-    image: Budgetimage, // Replace with your image or asset
+    image: Budgetimage,
     buttonText: 'Get Started',
     buttonLink: '/budget',
   },
@@ -50,7 +51,7 @@ const features = [
     title: 'Visual Analytics',
     description:
       'View your expenses in modern charts and graphs to understand your spending patterns.',
-    image: Analyticsimage, // Replace with your image or asset
+    image: Analyticsimage,
     buttonText: 'Explore Now',
     buttonLink: '/visual',
   },
@@ -58,7 +59,7 @@ const features = [
     title: 'User Authentication',
     description:
       'Securely register, log in, and manage your account with robust security features.',
-    image: Authenticationimage, // Replace with your image or asset
+    image: Authenticationimage,
     buttonText: 'Register / Login',
     buttonLink: '/auth',
   },
@@ -66,7 +67,7 @@ const features = [
     title: 'Data Export',
     description:
       'Export your expense data to CSV or PDF for offline analysis and record keeping.',
-    image: DataExportimage, // Replace with your image or asset
+    image: DataExportimage,
     buttonText: 'Learn More',
     buttonLink: '/auth',
   },
@@ -81,12 +82,14 @@ const Home: React.FC = () => {
 
   return (
     <>
+      <Navbar />
+      {/* CSS Reset */}
       <CssBaseline />
       {/* Root Full-Screen Container */}
       <Box sx={{ minHeight: '100vh', width: '100vw', backgroundColor: themeColors.background }}>
         {/* Hero Section */}
         <Grid container sx={{ minHeight: '60vh' }}>
-          {/* Left: Text and CTA */}
+          {/* Left: Text and Call-to-Action */}
           <Grid
             item
             xs={12}
@@ -143,9 +146,7 @@ const Home: React.FC = () => {
             item
             xs={12}
             md={6}
-            sx={{
-              display: { xs: 'none', md: 'block' },
-            }}
+            sx={{ display: { xs: 'none', md: 'block' } }}
           >
             <Box
               component="img"
@@ -194,6 +195,18 @@ const Home: React.FC = () => {
           </Grid>
         </Container>
 
+        {/* About Us Section */}
+        <Container sx={{ py: 4 }}>
+          <Typography variant="h4" align="center" sx={{ color: themeColors.primary, mb: 4 }}>
+            About Us
+          </Typography>
+          <Typography variant="body1" align="center" sx={{ color: themeColors.text }}>
+            At KAZI CHAP CHAP, we are committed to simplifying personal finance management. Our platform
+            allows you to log expenses, manage budgets, and analyze spending patterns easily. We believe
+            in empowering you to make informed financial decisions.
+          </Typography>
+        </Container>
+
         {/* Footer */}
         <Box sx={{ backgroundColor: '#f5f5f5', py: 2, textAlign: 'center' }}>
           <Typography variant="body2" color="text.secondary">
@@ -206,6 +219,3 @@ const Home: React.FC = () => {
 };
 
 export default Home;
-
-
-

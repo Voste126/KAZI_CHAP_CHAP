@@ -145,6 +145,7 @@ const Dashboard: React.FC = () => {
             </Typography>
             <Button color="inherit" onClick={() => navigate('/budget')}>Budget Manager</Button>
             <Button color="inherit" onClick={() => navigate('/expenses')}>Expenses</Button>
+            <Button color="inherit" onClick={() => navigate('/')}>Back</Button>
             <Button color="inherit" onClick={() => navigate('/auth')}>Logout</Button>
           </Toolbar>
         </AppBar>

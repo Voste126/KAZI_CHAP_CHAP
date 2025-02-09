@@ -39,6 +39,10 @@ interface TabPanelProps {
   index: number;
 }
 
+interface AuthFormProps {
+  setToken: (token: string | null) => void;
+}
+
 const TabPanel: React.FC<TabPanelProps> = ({ children, value, index, ...other }) => {
   return (
     <div
@@ -170,7 +174,7 @@ const RegisterForm: React.FC<RegisterFormProps> = React.memo(
   }
 );
 
-const AuthForm: React.FC = () => {
+const AuthForm: React.FC<AuthFormProps> = ({ setToken }) => {
   const navigate = useNavigate();
   // activeTab: 0 for Login, 1 for Register
   const [activeTab, setActiveTab] = useState(0);
@@ -195,7 +199,10 @@ const AuthForm: React.FC = () => {
       );
       setAlertSeverity('success');
       setAlertMsg('Login successful!');
-      localStorage.setItem('jwtToken', response.data.token);
+      const newToken = response.data.token;
+      localStorage.setItem('jwtToken', newToken);
+      setToken(newToken); // Update the token in App state
+      console.log('Logged in as:', response.data.user, 'Token:', newToken);
       navigate('/'); // Redirect to dashboard or home page
     } catch (err: unknown) {
       setAlertSeverity('error');
@@ -295,9 +302,4 @@ const AuthForm: React.FC = () => {
 };
 
 export default AuthForm;
-
-
-
-
-
 
