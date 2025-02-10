@@ -40,28 +40,35 @@ namespace KaziChapChap.API.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginDto loginDto)
         {
-            // The AuthService.Login method should throw or return null for invalid credentials.
             var user = await _authService.Login(loginDto.Email, loginDto.Password);
             if (user == null)
             {
                 return Unauthorized("Invalid credentials.");
             }
-            // Generate JWT token
             var token = GenerateJwtToken(user);
             var response = new AuthenticationResponseDto { Token = token, User = user };
             return Ok(response);
         }
 
+        // New Logout Endpoint
+        [HttpPost("logout")]
+        public IActionResult Logout()
+        {
+            // For JWT-based authentication, logout is typically handled on the client side 
+            // (by deleting the token). If you store tokens in cookies, you could clear the cookie here.
+            // Optionally, implement token revocation if needed.
+            // For JWT-based authentication, logout is typically handled on the client side.
+            return Ok(new LogoutResponseDto { Message = "Logged out successfully." });
+        }
+
         private string GenerateJwtToken(User user)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
-            // Read the secret from configuration (e.g., appsettings.json or environment variables)
             var secret = _configuration["Jwt:Secret"];
             if (string.IsNullOrEmpty(secret))
             {
                 throw new InvalidOperationException("JWT Secret is not configured.");
             }
-            // Decode the secret from Base64 (make sure your secret in configuration is Base64-encoded)
             var key = Convert.FromBase64String(secret);
             if (key.Length < 32)
             {
@@ -84,4 +91,11 @@ namespace KaziChapChap.API.Controllers
             return tokenHandler.WriteToken(token);
         }
     }
+
+    // Simple DTO for logout responses
+    public class LogoutResponseDto
+    {
+        public required string Message { get; set; }
+    }
 }
+

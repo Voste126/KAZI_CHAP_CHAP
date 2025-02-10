@@ -28,17 +28,16 @@ const Navbar: React.FC = () => {
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const isMobile = useMediaQuery('(max-width:600px)');
 
-  // Get token from localStorage (you can later manage this with Context)
+  // Get token from localStorage (later you might manage this via Context)
   const token = localStorage.getItem('jwtToken');
 
-  // Navigation menu items
+  // Always-available navigation menu items
   const menuItems = [
     { label: 'Home', path: '/' },
     { label: 'About Us', path: '/about' },
     { label: 'Budget', path: '/budget' },
     { label: 'Expenses', path: '/expenses' },
     { label: 'Visuals', path: '/visual' },
-    { label: 'Login/Sign Up', path: '/login' },
   ];
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
@@ -50,6 +49,7 @@ const Navbar: React.FC = () => {
   };
 
   const handleLogout = () => {
+    // Remove token and navigate to login page
     localStorage.removeItem('jwtToken');
     navigate('/login');
   };
@@ -88,6 +88,7 @@ const Navbar: React.FC = () => {
                   {item.label}
                 </MenuItem>
               ))}
+              {/* Conditionally render Login/Sign Up or Logout */}
               {!token ? (
                 <MenuItem
                   onClick={() => {
@@ -95,7 +96,7 @@ const Navbar: React.FC = () => {
                     navigate('/login');
                   }}
                 >
-                  Login
+                  Login/Sign Up
                 </MenuItem>
               ) : (
                 <MenuItem
@@ -120,9 +121,10 @@ const Navbar: React.FC = () => {
                 {item.label}
               </Button>
             ))}
+            {/* Conditionally render Login/Sign Up or Logout */}
             {!token ? (
               <Button color="inherit" onClick={() => navigate('/login')}>
-                Login
+                Login/Sign Up
               </Button>
             ) : (
               <Button color="inherit" onClick={handleLogout}>
@@ -137,4 +139,5 @@ const Navbar: React.FC = () => {
 };
 
 export default Navbar;
+
 

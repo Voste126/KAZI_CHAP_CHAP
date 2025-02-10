@@ -33,7 +33,7 @@ const About: React.FC = () => {
       }}
     >
       <Paper 
-        elevation={400} 
+        elevation={4} 
         sx={{ 
           backgroundColor: themeColors.background, 
           p: 4, 

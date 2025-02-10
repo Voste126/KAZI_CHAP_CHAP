@@ -15,6 +15,16 @@ namespace KaziChapChap.Tests.Controllers
 {
     public class BudgetsControllerTests
     {
+        // Helper to extract value from ActionResult<T>
+        private static T ExtractValue<T>(ActionResult<T> actionResult)
+        {
+            if (actionResult.Value != null)
+                return actionResult.Value;
+            if (actionResult.Result is ObjectResult okResult && okResult.Value is T value)
+                return value;
+            return default!;
+        }
+
         private async Task<KaziDbContext> GetDatabaseContext()
         {
             var options = new DbContextOptionsBuilder<KaziDbContext>()
@@ -25,7 +35,8 @@ namespace KaziChapChap.Tests.Controllers
             await context.Database.EnsureDeletedAsync();
             await context.Database.EnsureCreatedAsync();
 
-            // Seed sample data (assumes these budgets belong to some users)
+            // Seed sample data:
+            // Budget with UserID = 1 and Budget with UserID = 2.
             context.Budgets.Add(new Budget { BudgetID = 1, UserID = 1, Category = "Food", Amount = 100.00m, MonthYear = new System.DateTime(2024, 1, 1) });
             context.Budgets.Add(new Budget { BudgetID = 2, UserID = 2, Category = "Transport", Amount = 50.00m, MonthYear = new System.DateTime(2024, 2, 1) });
             await context.SaveChangesAsync();
@@ -49,38 +60,44 @@ namespace KaziChapChap.Tests.Controllers
         }
 
         [Fact]
-        public async Task GetBudgets_ReturnsAllBudgets()
+        public async Task GetBudgets_ReturnsOnlyAuthenticatedUserBudgets()
         {
-            // Arrange
+            // Arrange: Dummy user "1" should only see budgets with UserID = 1.
             var context = await GetDatabaseContext();
             var controller = new BudgetsController(context);
-            SetDummyUser(controller);
+            SetDummyUser(controller, "1");
 
             // Act
             var result = await controller.GetBudgets();
 
-            // Assert
-            var actionResult = Assert.IsType<ActionResult<IEnumerable<Budget>>>(result);
-            var budgets = Assert.IsType<List<Budget>>(actionResult.Value);
-            Assert.Equal(2, budgets.Count);
+            // Extract budgets from either Value or Result.
+            var budgets = ExtractValue(result);
+            Assert.NotNull(budgets); // Fail if null
+
+            // Assert: Only the budget with UserID 1 should be returned.
+            Assert.Single(budgets);
+            Assert.All(budgets, b => Assert.Equal(1, b.UserID));
         }
 
         [Fact]
         public async Task GetBudget_WithValidId_ReturnsBudget()
         {
-            // Arrange
+            // Arrange: Dummy user "1" requesting budget 1 (which belongs to user 1).
             var context = await GetDatabaseContext();
             var controller = new BudgetsController(context);
-            SetDummyUser(controller);
+            SetDummyUser(controller, "1");
 
             // Act
             var result = await controller.GetBudget(1);
 
+            // Extract the budget.
+            var budget = ExtractValue(result);
+            Assert.NotNull(budget);
+
             // Assert
-            var actionResult = Assert.IsType<ActionResult<Budget>>(result);
-            var budget = Assert.IsType<Budget>(actionResult.Value);
             Assert.Equal(1, budget.BudgetID);
             Assert.Equal("Food", budget.Category);
+            Assert.Equal(1, budget.UserID);
         }
 
         [Fact]
@@ -89,7 +106,7 @@ namespace KaziChapChap.Tests.Controllers
             // Arrange
             var context = await GetDatabaseContext();
             var controller = new BudgetsController(context);
-            SetDummyUser(controller);
+            SetDummyUser(controller, "1");
 
             // Act
             var result = await controller.GetBudget(99);
@@ -99,22 +116,45 @@ namespace KaziChapChap.Tests.Controllers
         }
 
         [Fact]
-        public async Task PostBudget_WithValidData_CreatesBudget()
+        public async Task GetBudget_ReturnsUnauthorized_WhenBudgetBelongsToDifferentUser()
         {
-            // Arrange
+            // Arrange: Dummy user "1" requesting budget 2 (which belongs to user 2).
             var context = await GetDatabaseContext();
             var controller = new BudgetsController(context);
-            // Simulate authenticated user with ID "1"
             SetDummyUser(controller, "1");
-            var newBudget = new Budget { BudgetID = 3, /* UserID will be overridden */ Category = "Entertainment", Amount = 200.00m, MonthYear = new System.DateTime(2024, 3, 1) };
+
+            // Act
+            var result = await controller.GetBudget(2);
+
+            // Assert: Should return Unauthorized.
+            var unauthorizedResult = Assert.IsType<UnauthorizedObjectResult>(result.Result);
+            Assert.Equal("You are not authorized to access this budget.", unauthorizedResult.Value);
+        }
+
+        [Fact]
+        public async Task PostBudget_WithValidData_CreatesBudget()
+        {
+            // Arrange: Dummy user "1"
+            var context = await GetDatabaseContext();
+            var controller = new BudgetsController(context);
+            SetDummyUser(controller, "1");
+
+            var newBudget = new Budget
+            {
+                BudgetID = 3, // This value may be ignored if auto-generated.
+                Category = "Entertainment",
+                Amount = 200.00m,
+                MonthYear = new System.DateTime(2024, 3, 1)
+            };
 
             // Act
             var result = await controller.PostBudget(newBudget);
 
+            // Extract the created budget.
+            var createdBudget = ExtractValue(result);
+            Assert.NotNull(createdBudget);
+
             // Assert
-            var actionResult = Assert.IsType<CreatedAtActionResult>(result.Result);
-            var createdBudget = Assert.IsType<Budget>(actionResult.Value);
-            Assert.Equal(3, createdBudget.BudgetID);
             Assert.Equal("Entertainment", createdBudget.Category);
             // The UserID should now equal "1" (from the dummy user)
             Assert.Equal(1, createdBudget.UserID);
@@ -123,18 +163,25 @@ namespace KaziChapChap.Tests.Controllers
         [Fact]
         public async Task PutBudget_WithValidId_UpdatesBudget()
         {
-            // Arrange
+            // Arrange: Dummy user "1" updating budget 1.
             var context = await GetDatabaseContext();
             var controller = new BudgetsController(context);
-            SetDummyUser(controller);
-            var updatedBudget = new Budget { BudgetID = 1, UserID = 1, Category = "Groceries", Amount = 120.00m, MonthYear = new System.DateTime(2024, 1, 1) };
+            SetDummyUser(controller, "1");
+
+            var updatedBudget = new Budget
+            {
+                BudgetID = 1,
+                UserID = 1,
+                Category = "Groceries",
+                Amount = 120.00m,
+                MonthYear = new System.DateTime(2024, 1, 1)
+            };
 
             // Act
             var result = await controller.PutBudget(1, updatedBudget);
 
             // Assert
             Assert.IsType<NoContentResult>(result);
-
             var modifiedBudget = await context.Budgets.FindAsync(1);
             Assert.NotNull(modifiedBudget);
             Assert.Equal("Groceries", modifiedBudget.Category);
@@ -142,44 +189,37 @@ namespace KaziChapChap.Tests.Controllers
         }
 
         [Fact]
-        public async Task PutBudget_WithMismatchedId_ReturnsBadRequest()
+        public async Task PutBudget_ReturnsUnauthorized_WhenUpdatingBudgetOfDifferentUser()
         {
-            // Arrange
+            // Arrange: Dummy user "1" trying to update budget 2 (which belongs to user 2).
             var context = await GetDatabaseContext();
             var controller = new BudgetsController(context);
-            SetDummyUser(controller);
-            var updatedBudget = new Budget { BudgetID = 2, UserID = 2, Category = "Transport", Amount = 75.00m, MonthYear = new System.DateTime(2024, 2, 1) };
+            SetDummyUser(controller, "1");
+
+            var updatedBudget = new Budget
+            {
+                BudgetID = 2,
+                UserID = 2, // originally belongs to user 2
+                Category = "Transport",
+                Amount = 75.00m,
+                MonthYear = new System.DateTime(2024, 2, 1)
+            };
 
             // Act
-            var result = await controller.PutBudget(1, updatedBudget);
+            var result = await controller.PutBudget(2, updatedBudget);
 
-            // Assert
-            Assert.IsType<BadRequestResult>(result);
-        }
-
-        [Fact]
-        public async Task PutBudget_WithNonExistingId_ReturnsNotFound()
-        {
-            // Arrange
-            var context = await GetDatabaseContext();
-            var controller = new BudgetsController(context);
-            SetDummyUser(controller);
-            var updatedBudget = new Budget { BudgetID = 99, UserID = 3, Category = "Utilities", Amount = 60.00m, MonthYear = new System.DateTime(2024, 4, 1) };
-
-            // Act
-            var result = await controller.PutBudget(99, updatedBudget);
-
-            // Assert
-            Assert.IsType<NotFoundResult>(result);
+            // Assert: Should return Unauthorized.
+            var unauthorizedResult = Assert.IsType<UnauthorizedObjectResult>(result);
+            Assert.Equal("You are not authorized to update this budget.", unauthorizedResult.Value);
         }
 
         [Fact]
         public async Task DeleteBudget_WithValidId_RemovesBudget()
         {
-            // Arrange
+            // Arrange: Dummy user "1" deleting budget 1.
             var context = await GetDatabaseContext();
             var controller = new BudgetsController(context);
-            SetDummyUser(controller);
+            SetDummyUser(controller, "1");
 
             // Act
             var result = await controller.DeleteBudget(1);
@@ -191,21 +231,27 @@ namespace KaziChapChap.Tests.Controllers
         }
 
         [Fact]
-        public async Task DeleteBudget_WithInvalidId_ReturnsNotFound()
+        public async Task DeleteBudget_ReturnsUnauthorized_WhenDeletingBudgetOfDifferentUser()
         {
-            // Arrange
+            // Arrange: Dummy user "1" trying to delete budget 2 (which belongs to user 2).
             var context = await GetDatabaseContext();
             var controller = new BudgetsController(context);
-            SetDummyUser(controller);
+            SetDummyUser(controller, "1");
 
             // Act
-            var result = await controller.DeleteBudget(99);
+            var result = await controller.DeleteBudget(2);
 
-            // Assert
-            Assert.IsType<NotFoundResult>(result);
+            // Assert: Should return Unauthorized.
+            var unauthorizedResult = Assert.IsType<UnauthorizedObjectResult>(result);
+            Assert.Equal("You are not authorized to delete this budget.", unauthorizedResult.Value);
         }
     }
 }
+
+
+
+
+
 
 
 

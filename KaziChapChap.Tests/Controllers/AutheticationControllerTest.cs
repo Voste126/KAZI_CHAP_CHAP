@@ -122,8 +122,21 @@ namespace KaziChapChap.Tests.Controllers
             var unauthorizedResult = Assert.IsType<UnauthorizedObjectResult>(result);
             Assert.Equal("Invalid credentials.", unauthorizedResult.Value);
         }
+
+        [Fact]
+        public void Logout_ReturnsOkResult_WithLogoutMessage()
+        {
+            // Act
+            var result = _controller.Logout();
+
+            // Assert
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            var logoutResponse = Assert.IsType<LogoutResponseDto>(okResult.Value);
+            Assert.Equal("Logged out successfully.", logoutResponse.Message);
+        }
     }
 }
+
 
 
 

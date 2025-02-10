@@ -29,7 +29,19 @@ namespace KaziChapChap.API.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Expense>>> GetExpenses()
         {
-            return await _context.Expenses.ToListAsync();
+            // Retrieve the authenticated user's ID.
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int authenticatedUserId))
+            {
+                return Unauthorized();
+            }
+
+            // Filter expenses by the authenticated user's ID.
+            var expenses = await _context.Expenses
+                .Where(e => e.UserID == authenticatedUserId)
+                .ToListAsync();
+
+            return Ok(expenses);
         }
 
         // GET: api/Expenses/5
@@ -37,13 +49,25 @@ namespace KaziChapChap.API.Controllers
         public async Task<ActionResult<Expense>> GetExpense(int id)
         {
             var expense = await _context.Expenses.FindAsync(id);
-
             if (expense == null)
             {
                 return NotFound();
             }
 
-            return expense;
+            // Retrieve the authenticated user's ID.
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int authenticatedUserId))
+            {
+                return Unauthorized();
+            }
+            
+            // Ensure that the expense belongs to the authenticated user.
+            if (expense.UserID != authenticatedUserId)
+            {
+                return Unauthorized("You are not authorized to access this expense.");
+            }
+
+            return Ok(expense);
         }
 
         // POST: api/Expenses
@@ -81,7 +105,21 @@ namespace KaziChapChap.API.Controllers
                 return NotFound();
             }
 
+            // Retrieve the authenticated user's ID.
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int authenticatedUserId))
+            {
+                return Unauthorized();
+            }
+
+            // Ensure that the expense belongs to the authenticated user.
+            if (existingExpense.UserID != authenticatedUserId)
+            {
+                return Unauthorized("You are not authorized to update this expense.");
+            }
+
             // Update the tracked entity’s values with those from the incoming object.
+            // You can also selectively update properties if needed.
             _context.Entry(existingExpense).CurrentValues.SetValues(expense);
 
             try
@@ -113,6 +151,19 @@ namespace KaziChapChap.API.Controllers
                 return NotFound();
             }
 
+            // Retrieve the authenticated user's ID.
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int authenticatedUserId))
+            {
+                return Unauthorized();
+            }
+
+            // Ensure the expense belongs to the authenticated user.
+            if (expense.UserID != authenticatedUserId)
+            {
+                return Unauthorized("You are not authorized to delete this expense.");
+            }
+
             _context.Expenses.Remove(expense);
             await _context.SaveChangesAsync();
 
@@ -120,4 +171,3 @@ namespace KaziChapChap.API.Controllers
         }
     }
 }
-

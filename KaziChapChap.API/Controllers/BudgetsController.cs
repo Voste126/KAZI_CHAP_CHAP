@@ -30,17 +30,29 @@ namespace KaziChapChap.API.Controllers
         }
 
         /// <summary>
-        /// Gets all budgets.
+        /// Gets all budgets for the authenticated user.
         /// </summary>
         /// <returns>A list of budgets.</returns>
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Budget>>> GetBudgets()
         {
-            return await _context.Budgets.ToListAsync();
+            // Retrieve the authenticated user's ID from the JWT claims.
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int authenticatedUserId))
+            {
+                return Unauthorized();
+            }
+
+            // Filter budgets by the authenticated user's ID.
+            var budgets = await _context.Budgets
+                .Where(b => b.UserID == authenticatedUserId)
+                .ToListAsync();
+
+            return Ok(budgets);
         }
 
         /// <summary>
-        /// Gets a specific budget by ID.
+        /// Gets a specific budget by ID (only if it belongs to the authenticated user).
         /// </summary>
         /// <param name="id">The ID of the budget.</param>
         /// <returns>The budget with the specified ID.</returns>
@@ -48,10 +60,22 @@ namespace KaziChapChap.API.Controllers
         public async Task<ActionResult<Budget>> GetBudget(int id)
         {
             var budget = await _context.Budgets.FindAsync(id);
-
             if (budget == null)
             {
                 return NotFound();
+            }
+
+            // Retrieve the authenticated user's ID.
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int authenticatedUserId))
+            {
+                return Unauthorized();
+            }
+
+            // Ensure that the budget belongs to the authenticated user.
+            if (budget.UserID != authenticatedUserId)
+            {
+                return Unauthorized("You are not authorized to access this budget.");
             }
 
             return budget;
@@ -67,16 +91,11 @@ namespace KaziChapChap.API.Controllers
         {
             // Get the authenticated user's ID from claims.
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-            if (userIdClaim == null)
+            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int authenticatedUserId))
             {
                 return Unauthorized();
             }
-
             // Override any provided UserID with the authenticated user's ID.
-            if (!int.TryParse(userIdClaim.Value, out int authenticatedUserId))
-            {
-                return Unauthorized();
-            }
             budget.UserID = authenticatedUserId;
 
             _context.Budgets.Add(budget);
@@ -103,6 +122,19 @@ namespace KaziChapChap.API.Controllers
             if (existingBudget == null)
             {
                 return NotFound();
+            }
+
+            // Retrieve the authenticated user's ID.
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int authenticatedUserId))
+            {
+                return Unauthorized();
+            }
+
+            // Ensure the budget being updated belongs to the authenticated user.
+            if (existingBudget.UserID != authenticatedUserId)
+            {
+                return Unauthorized("You are not authorized to update this budget.");
             }
 
             // Update allowed properties.
@@ -141,6 +173,19 @@ namespace KaziChapChap.API.Controllers
             if (budget == null)
             {
                 return NotFound();
+            }
+
+            // Retrieve the authenticated user's ID.
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int authenticatedUserId))
+            {
+                return Unauthorized();
+            }
+
+            // Ensure the budget belongs to the authenticated user.
+            if (budget.UserID != authenticatedUserId)
+            {
+                return Unauthorized("You are not authorized to delete this budget.");
             }
 
             _context.Budgets.Remove(budget);

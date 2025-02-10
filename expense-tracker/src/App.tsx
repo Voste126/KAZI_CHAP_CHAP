@@ -10,13 +10,13 @@ import ExpenseForm from './components/ExpenseForm';
 import Home from './pages/Home';
 import VisualCharts from './components/visualCharts';
 import About from './pages/About';
+import Logout from './components/Auth/Logout';
 
 const App: React.FC = () => {
   const [token, setToken] = useState<string | null>(localStorage.getItem('jwtToken'));
 
   return (
     <Router>
-      {/* Pass setToken to AuthForm so it can update the token state after login */}
       <Routes>
         {/* Public Routes */}
         <Route path="/auth" element={<AuthForm setToken={setToken} />} />
@@ -32,11 +32,14 @@ const App: React.FC = () => {
             <Route path="/expenses" element={<ExpensesList token={token} />} />
             <Route path="/expense/new" element={<ExpenseForm token={token} />} />
             <Route path="/expense/edit/:id" element={<ExpenseForm token={token} />} />
+            <Route path="/logout" element={<Logout setToken={setToken} />} />
             <Route path="*" element={<Navigate to="/expenses" replace />} />
           </>
         ) : (
           <Route path="*" element={<Navigate to="/login" replace />} />
         )}
+        
+        {/* Fallback route if no other route matches */}
         <Route path="*" element={<NotFound />} />
       </Routes>
     </Router>
@@ -44,6 +47,7 @@ const App: React.FC = () => {
 };
 
 export default App;
+
 
 
 
