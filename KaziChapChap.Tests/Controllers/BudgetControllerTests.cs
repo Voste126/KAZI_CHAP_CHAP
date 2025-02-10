@@ -1,3 +1,4 @@
+// Tests/Controllers/BudgetsControllerTests.cs
 using Xunit;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -6,7 +7,6 @@ using KaziChapChap.Core.Models;
 using KaziChapChap.Data;
 using System.Collections.Generic;
 using System.Linq;
-
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using System.Security.Claims;
@@ -25,7 +25,7 @@ namespace KaziChapChap.Tests.Controllers
             await context.Database.EnsureDeletedAsync();
             await context.Database.EnsureCreatedAsync();
 
-            // Seed data (assumes these budgets belong to some users)
+            // Seed sample data (assumes these budgets belong to some users)
             context.Budgets.Add(new Budget { BudgetID = 1, UserID = 1, Category = "Food", Amount = 100.00m, MonthYear = new System.DateTime(2024, 1, 1) });
             context.Budgets.Add(new Budget { BudgetID = 2, UserID = 2, Category = "Transport", Amount = 50.00m, MonthYear = new System.DateTime(2024, 2, 1) });
             await context.SaveChangesAsync();
@@ -206,5 +206,6 @@ namespace KaziChapChap.Tests.Controllers
         }
     }
 }
+
 
 

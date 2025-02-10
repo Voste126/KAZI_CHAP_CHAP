@@ -19,6 +19,7 @@ namespace KaziChapChap.Tests.Controllers
         public AuthenticationControllerTest()
         {
             _mockAuthService = new Mock<IAuthService>();
+
             // Set up in-memory configuration with a valid Base64-encoded JWT secret key
             var inMemorySettings = new Dictionary<string, string?>
             {
@@ -123,5 +124,6 @@ namespace KaziChapChap.Tests.Controllers
         }
     }
 }
+
 
 

@@ -313,7 +313,7 @@
             },
             "Microsoft.EntityFrameworkCore.InMemory": {
               "target": "Package",
-              "version": "[7.0.0, )"
+              "version": "[9.0.1, )"
             },
             "Microsoft.NET.Test.Sdk": {
               "target": "Package",

@@ -1,3 +1,4 @@
+// Tests/Controllers/ExpensesControllerTests.cs
 using System;
 using System.Linq;
 using System.Security.Claims;
@@ -25,6 +26,8 @@ namespace KaziChapChap.Tests.Controllers
                 .Options;
 
             _context = new KaziDbContext(options);
+            _context.Database.EnsureDeleted();
+            _context.Database.EnsureCreated();
 
             // Seed the Users table with a test user so that UserID = 1 exists.
             _context.Users.Add(new User
@@ -40,7 +43,7 @@ namespace KaziChapChap.Tests.Controllers
             // Set up a dummy authenticated user to simulate authorized access.
             var user = new ClaimsPrincipal(new ClaimsIdentity(new Claim[]
             {
-                new Claim(ClaimTypes.NameIdentifier, "1"), // This must match the seeded user ID.
+                new Claim(ClaimTypes.NameIdentifier, "1"), // Must match the seeded user ID.
                 new Claim(ClaimTypes.Email, "test@example.com")
             }, "TestAuthentication"));
 
@@ -160,4 +163,5 @@ namespace KaziChapChap.Tests.Controllers
         }
     }
 }
+
 

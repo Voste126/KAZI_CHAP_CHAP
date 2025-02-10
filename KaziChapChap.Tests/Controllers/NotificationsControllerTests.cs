@@ -1,11 +1,10 @@
-//Notification test cases
+// Tests/NotificationsControllerTests.cs
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using KaziChapChap.API.Controllers;
 using KaziChapChap.Core.Models;
 using KaziChapChap.Data;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -21,10 +20,15 @@ namespace KaziChapChap.Tests
 
             var context = new KaziDbContext(options);
 
-            // Seed test data
+            // Ensure a clean slate and force EF Core to build the model and internal services.
+            await context.Database.EnsureDeletedAsync();
+            await context.Database.EnsureCreatedAsync();
+
+            // Seed test data: add a valid user.
             context.Users.Add(new User { UserID = 1 });
             await context.SaveChangesAsync();
 
+            // Seed a notification for the valid user.
             context.Notifications.Add(new Notification
             {
                 NotificationID = 1,
@@ -133,11 +137,11 @@ namespace KaziChapChap.Tests
             var context = await GetDatabaseContext();
             var controller = new NotificationsController(context);
 
-            // Retrieve existing notification
+            // Retrieve existing notification.
             var existingNotification = await context.Notifications.FindAsync(1);
-            Assert.NotNull(existingNotification); // Ensure it exists
+            Assert.NotNull(existingNotification);
 
-            // Modify the existing instance
+            // Modify the notification.
             existingNotification.Message = "Updated Notification";
             existingNotification.IsRead = true;
 
@@ -146,12 +150,11 @@ namespace KaziChapChap.Tests
 
             // Assert
             Assert.IsType<NoContentResult>(result);
-             // Retrieve the updated notification again
+            // Verify the update.
             var updatedNotification = await context.Notifications.FindAsync(1);
             Assert.NotNull(updatedNotification);
             Assert.True(updatedNotification.IsRead);
         }
-
 
         [Fact]
         public async Task PutNotification_WithInvalidId_ReturnsBadRequest()
@@ -255,3 +258,4 @@ namespace KaziChapChap.Tests
         }
     }
 }
+
