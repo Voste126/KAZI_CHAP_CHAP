@@ -22,13 +22,12 @@ import DataExportimage from '../assets/csv.png';
 import Navbar from '../components/Navbar';
 import About from '../pages/About';
 
-// Define your theme colors
 const themeColors = {
-  primary: '#006400',   // Dark Green
-  secondary: '#8B4513', // Saddle Brown
-  background: '#F5F5DC',// Beige
-  text: '#2F4F4F',      // Dark Slate Gray
-  accent: '#FFD700',    // Gold
+  primary: '#006400',
+  secondary: '#8B4513',
+  background: '#F5F5DC',
+  text: '#2F4F4F',
+  accent: '#FFD700',
 };
 
 const features = [
@@ -84,13 +83,9 @@ const Home: React.FC = () => {
   return (
     <>
       <Navbar />
-      {/* CSS Reset */}
       <CssBaseline />
-      {/* Root Full-Screen Container */}
       <Box sx={{ minHeight: '100vh', width: '100vw', backgroundColor: themeColors.background }}>
-        {/* Hero Section */}
         <Grid container sx={{ minHeight: '60vh' }}>
-          {/* Left: Text and Call-to-Action */}
           <Grid
             item
             xs={12}
@@ -102,11 +97,7 @@ const Home: React.FC = () => {
               p: { xs: 2, md: 4 },
             }}
           >
-            <Typography
-              variant="h3"
-              component="h1"
-              sx={{ color: themeColors.primary, fontWeight: 'bold', mb: 2 }}
-            >
+            <Typography variant="h3" component="h1" sx={{ color: themeColors.primary, fontWeight: 'bold', mb: 2 }}>
               Welcome to KAZI CHAP CHAP
             </Typography>
             <Typography variant="h6" sx={{ color: themeColors.text, mb: 4 }}>
@@ -116,13 +107,7 @@ const Home: React.FC = () => {
               <Button
                 variant="contained"
                 size="large"
-                sx={{
-                  backgroundColor: themeColors.primary,
-                  color: '#fff',
-                  mr: 2,
-                  px: 3,
-                  py: 1.5,
-                }}
+                sx={{ backgroundColor: themeColors.primary, color: '#fff', mr: 2, px: 3, py: 1.5 }}
                 onClick={() => handleNavigate('/login')}
               >
                 Get Started
@@ -130,39 +115,23 @@ const Home: React.FC = () => {
               <Button
                 variant="outlined"
                 size="large"
-                sx={{
-                  borderColor: themeColors.primary,
-                  color: themeColors.primary,
-                  px: 3,
-                  py: 1.5,
-                }}
+                sx={{ borderColor: themeColors.primary, color: themeColors.primary, px: 3, py: 1.5 }}
                 onClick={() => handleNavigate('/budget')}
               >
                 Learn More
               </Button>
             </Box>
           </Grid>
-          {/* Right: Hero Image */}
-          <Grid
-            item
-            xs={12}
-            md={6}
-            sx={{ display: { xs: 'none', md: 'block' } }}
-          >
+          <Grid item xs={12} md={6} sx={{ display: { xs: 'none', md: 'block' } }}>
             <Box
               component="img"
               src={heroImage}
               alt="Hero"
-              sx={{
-                width: '100%',
-                height: '100vh',
-                objectFit: 'cover',
-              }}
+              sx={{ width: '100%', height: '100vh', objectFit: 'cover' }}
             />
           </Grid>
         </Grid>
 
-        {/* Features Section */}
         <Container sx={{ py: 4 }}>
           <Typography variant="h4" align="center" sx={{ color: themeColors.primary, mb: 4 }}>
             Our Features
@@ -171,12 +140,7 @@ const Home: React.FC = () => {
             {features.map((feature, index) => (
               <Grid item xs={12} sm={6} md={4} key={index}>
                 <Card sx={{ maxWidth: 345, m: 'auto', boxShadow: 3 }}>
-                  <CardMedia
-                    component="img"
-                    height="180"
-                    image={feature.image}
-                    alt={feature.title}
-                  />
+                  <CardMedia component="img" height="180" image={feature.image} alt={feature.title} />
                   <CardContent>
                     <Typography variant="h5" component="div" sx={{ color: themeColors.primary }}>
                       {feature.title}
@@ -198,7 +162,6 @@ const Home: React.FC = () => {
 
         <About />
 
-        {/* Footer */}
         <Box sx={{ backgroundColor: '#f5f5f5', py: 2, textAlign: 'center' }}>
           <Typography variant="body2" color="text.secondary">
             &copy; {new Date().getFullYear()} KAZI CHAP CHAP. All rights reserved.
@@ -210,3 +173,4 @@ const Home: React.FC = () => {
 };
 
 export default Home;
+

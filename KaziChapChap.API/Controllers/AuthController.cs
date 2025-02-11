@@ -1,4 +1,3 @@
-// Controllers/AuthController.cs
 using KaziChapChap.Core.Models;
 using KaziChapChap.Core.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -54,9 +53,6 @@ namespace KaziChapChap.API.Controllers
         [HttpPost("logout")]
         public IActionResult Logout()
         {
-            // For JWT-based authentication, logout is typically handled on the client side 
-            // (by deleting the token). If you store tokens in cookies, you could clear the cookie here.
-            // Optionally, implement token revocation if needed.
             // For JWT-based authentication, logout is typically handled on the client side.
             return Ok(new LogoutResponseDto { Message = "Logged out successfully." });
         }
@@ -74,12 +70,16 @@ namespace KaziChapChap.API.Controllers
             {
                 throw new InvalidOperationException("JWT Secret key must be at least 256 bits (32 bytes) long.");
             }
+            // Determine role: if the email is the admin email then assign role "Admin", otherwise "User".
+            var role = string.Equals(user.Email, "Admin@gmail.com", StringComparison.OrdinalIgnoreCase) ? "Admin" : "User";
+
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(new Claim[]
                 {
                     new Claim(ClaimTypes.NameIdentifier, user.UserID.ToString()),
-                    new Claim(ClaimTypes.Email, user.Email ?? string.Empty)
+                    new Claim(ClaimTypes.Email, user.Email ?? string.Empty),
+                    new Claim(ClaimTypes.Role, role)
                 }),
                 Expires = DateTime.UtcNow.AddHours(1),
                 Issuer = _configuration["Jwt:Issuer"],
@@ -92,10 +92,8 @@ namespace KaziChapChap.API.Controllers
         }
     }
 
-    // Simple DTO for logout responses
     public class LogoutResponseDto
     {
         public required string Message { get; set; }
     }
 }
-

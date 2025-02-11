@@ -13,6 +13,11 @@ import {
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import { useNavigate } from 'react-router-dom';
+import {jwtDecode} from 'jwt-decode';
+
+interface JwtPayload {
+  role: string;
+}
 
 // Theme colors (adjust as needed)
 const themeColors = {
@@ -28,16 +33,27 @@ const Navbar: React.FC = () => {
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const isMobile = useMediaQuery('(max-width:600px)');
 
-  // Get token from localStorage (later you might manage this via Context)
+  // Retrieve token from localStorage
   const token = localStorage.getItem('jwtToken');
+  let isAdmin = false;
+  if (token) {
+    try {
+      const decoded = jwtDecode<JwtPayload>(token);
+      isAdmin = decoded.role === 'Admin';
+    } catch (error) {
+      console.error('Token decoding error:', error);
+      isAdmin = false;
+    }
+  }
 
-  // Always-available navigation menu items
+  // Define menu items; conditionally add the Admin Panel if user is an admin.
   const menuItems = [
     { label: 'Home', path: '/' },
     { label: 'About Us', path: '/about' },
     { label: 'Budget', path: '/budget' },
     { label: 'Expenses', path: '/expenses' },
     { label: 'Visuals', path: '/visual' },
+    ...(isAdmin ? [{ label: 'Admin Panel', path: '/admin' }] : []),
   ];
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
@@ -139,5 +155,6 @@ const Navbar: React.FC = () => {
 };
 
 export default Navbar;
+
 
 

@@ -203,7 +203,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ setToken }) => {
       localStorage.setItem('jwtToken', newToken);
       setToken(newToken); // Update the token in App state
       console.log('Logged in as:', response.data.user, 'Token:', newToken);
-      navigate('/'); // Redirect to dashboard or home page
+      navigate('/'); // Redirect to the main page
     } catch (err: unknown) {
       setAlertSeverity('error');
       if (axios.isAxiosError(err) && err.response && err.response.data) {
@@ -260,9 +260,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ setToken }) => {
             onChange={handleTabChange}
             variant="fullWidth"
             sx={{
-              '& .MuiTabs-indicator': {
-                backgroundColor: themeColors.secondary,
-              },
+              '& .MuiTabs-indicator': { backgroundColor: themeColors.secondary },
               color: themeColors.primary,
             }}
           >
@@ -302,4 +300,6 @@ const AuthForm: React.FC<AuthFormProps> = ({ setToken }) => {
 };
 
 export default AuthForm;
+
+
 
