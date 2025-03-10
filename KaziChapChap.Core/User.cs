@@ -9,8 +9,6 @@ namespace KaziChapChap.Core.Models
         public int UserID { get; set; }
         public string? Email { get; set; }
         public string? PasswordHash { get; set; }
-        public string? ResetToken { get; set; }
-        public DateTime? ResetTokenExpiry { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         
         // Navigation properties

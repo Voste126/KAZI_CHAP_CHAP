@@ -1,6 +1,8 @@
 ﻿// Data/AuthService.cs
 using System;
+using System.Text;
 using System.Threading.Tasks;
+using System.Security.Cryptography;
 using Microsoft.EntityFrameworkCore;
 using KaziChapChap.Core.Services;
 using KaziChapChap.Core.Models;
@@ -54,14 +56,18 @@ namespace KaziChapChap.Data
 
         private static string HashPassword(string password)
         {
-            // Implement proper password hashing (e.g., using BCrypt)
-            return password; // Placeholder for demonstration
+            using (var sha256 = SHA256.Create())
+            {
+                byte[] hashedBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
+                return BitConverter.ToString(hashedBytes).Replace("-", "").ToLowerInvariant();
+            }
         }
 
         private static bool VerifyPassword(string hashedPassword, string password)
         {
-            // Implement proper verification logic
-            return hashedPassword == password; // Placeholder for demonstration
+            var hashOfInput = HashPassword(password);
+            return string.Equals(hashedPassword, hashOfInput, StringComparison.OrdinalIgnoreCase);
         }
     }
 }
+
