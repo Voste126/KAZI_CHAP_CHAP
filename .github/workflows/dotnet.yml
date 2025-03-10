@@ -30,10 +30,10 @@ jobs:
           fi
 
       - name: Restore dependencies
-        run: dotnet restore KaziChapChap.API.sln
+        run: dotnet restore KaziChapChap.API/KaziChapChap.API.sln
 
       - name: Build solution
-        run: dotnet build --no-restore KaziChapChap.API.sln
+        run: dotnet build --no-restore KaziChapChap.API/KaziChapChap.API.sln
 
       - name: Run Tests
-        run: dotnet test --logger "trx;LogFileName=test-results.trx" --blame KaziChapChap.API.sln
+        run: dotnet test --logger "trx;LogFileName=test-results.trx" --blame KaziChapChap.API/KaziChapChap.API.sln
