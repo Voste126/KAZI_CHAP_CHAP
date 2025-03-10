@@ -6,7 +6,8 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 using KaziChapChap.Core.Models; // Data models: Budget, Expense, User, etc.
 using KaziChapChap.Data;
-
+using System.Security.Cryptography;
+using System.Text;
 namespace KaziChapChap.API.Controllers
 {
     /// <summary>
@@ -26,7 +27,6 @@ namespace KaziChapChap.API.Controllers
         }
 
         #region Budgets Endpoints
-
         [HttpGet("budgets")]
         public async Task<ActionResult<IEnumerable<Budget>>> GetAllBudgets()
         {
@@ -173,6 +173,8 @@ namespace KaziChapChap.API.Controllers
 
         #endregion
 
+
+
         #region Users Endpoints
 
         [HttpGet("users")]
@@ -193,21 +195,57 @@ namespace KaziChapChap.API.Controllers
             return Ok(user);
         }
 
-        [HttpPost("users")]
-        public async Task<ActionResult<User>> CreateUser(User user)
+        // DTO for creating a user.
+        // The client sends "email" and "password" (plain text) in the request body.
+        public class CreateUserDto
         {
+            public string? Email { get; set; }
+            public string? Password { get; set; } // This will be stored as plain text in PasswordHash.
+        }
+
+        [HttpPost("users")]
+        public async Task<ActionResult<User>> CreateUser(CreateUserDto dto)
+        {
+            var user = new User
+            {
+                Email = dto.Email,
+                PasswordHash = dto.Password, // Store plain text password directly.
+                CreatedAt = DateTime.UtcNow,
+            };
+
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
 
             return CreatedAtAction(nameof(GetUser), new { id = user.UserID }, user);
         }
 
-        [HttpPut("users/{id}")]
-        public async Task<IActionResult> UpdateUser(int id, User user)
+        // DTO for updating a user.
+        public class UpdateUserDto
         {
-            if (id != user.UserID)
+            public int UserID { get; set; }
+            public string? Email { get; set; }
+            public string? Password { get; set; } // If provided, update PasswordHash.
+        }
+
+        [HttpPut("users/{id}")]
+        public async Task<IActionResult> UpdateUser(int id, UpdateUserDto dto)
+        {
+            if (id != dto.UserID)
             {
                 return BadRequest("User ID mismatch.");
+            }
+
+            var user = await _context.Users.FindAsync(id);
+            if (user == null)
+            {
+                return NotFound();
+            }
+
+            // Update properties.
+            user.Email = dto.Email;
+            if (!string.IsNullOrWhiteSpace(dto.Password))
+            {
+                user.PasswordHash = dto.Password;
             }
 
             _context.Entry(user).State = EntityState.Modified;
