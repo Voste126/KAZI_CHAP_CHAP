@@ -13,7 +13,7 @@ namespace KaziChapChap.Data.Migrations
 {
     [DbContext(typeof(KaziDbContext))]
     [Migration("20250310144340_usersupdate")]
-    partial class usersupdate
+    partial class UsersUpdate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
