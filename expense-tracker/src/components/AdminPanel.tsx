@@ -62,6 +62,7 @@ const themeColors = {
 // Data models
 interface Expense {
   expenseID: number;
+  userID: number;
   category: string;
   amount: number;
   date: string;
@@ -70,9 +71,10 @@ interface Expense {
 
 interface Budget {
   budgetID: number;
+  userID: number;
   category: string;
   amount: number;
-  monthYear: string;
+  monthYear: string; // e.g., "2024-03-01T00:00:00Z"
 }
 
 interface User {
@@ -93,6 +95,28 @@ const AdminPanel: React.FC<{ token: string }> = ({ token }) => {
   const [openDialog, setOpenDialog] = useState<boolean>(false);
   const [dialogType, setDialogType] = useState<'expense' | 'budget' | 'user' | null>(null);
   const [formData, setFormData] = useState<Partial<Expense | Budget | User>>({});
+
+  // Add the corrected date change handler for budget dates
+  const handleDateChange = (date: Date | null) => {
+    if (!date) return;
+    // Create a new Date set to midnight UTC for the selected date
+    const utcDate = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    setFormData(prev => ({
+      ...prev,
+      monthYear: utcDate.toISOString(), // e.g., "2025-03-13T00:00:00.000Z"
+    }));
+  };
+
+  // Add this handler in your AdminPanel component (alongside your other handlers)
+const handleExpenseDateChange = (date: Date | null) => {
+  if (!date) return;
+  // Create a new Date set to midnight UTC for the selected date
+  const utcDate = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  setFormData(prev => ({
+    ...prev,
+    date: utcDate.toISOString(), // e.g., "2025-03-10T00:00:00.000Z"
+  }));
+};
 
   // Fetch data on mount
   useEffect(() => {
@@ -218,9 +242,6 @@ const AdminPanel: React.FC<{ token: string }> = ({ token }) => {
       return acc;
     }, {})
   ).map(([month, total]) => ({ month, total }));
-
-  // Optionally, sort monthlyExpensesData chronologically (if possible)
-  // For simplicity, assume the data is already in order or sort as needed.
 
   // 3. Radar Chart Data: Use the same category totals
   const radarData = Object.entries(expenseByCategory).map(([category, amount]) => ({ category, amount }));
@@ -542,6 +563,15 @@ const AdminPanel: React.FC<{ token: string }> = ({ token }) => {
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                 variant="outlined"
               />
+              {/* userID */}
+              <TextField
+                label="User ID"
+                type="number"
+                fullWidth
+                value={(formData as Expense).userID || ''}
+                onChange={(e) => setFormData({ ...formData, userID: parseInt(e.target.value) })}
+                variant="outlined"
+              />
               <TextField
                 label="Amount"
                 type="number"
@@ -556,9 +586,11 @@ const AdminPanel: React.FC<{ token: string }> = ({ token }) => {
                 fullWidth
                 InputLabelProps={{ shrink: true }}
                 value={(formData as Expense).date ? (formData as Expense).date.split('T')[0] : ''}
-                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                // Convert the selected date string into a Date and pass it to the handler
+                onChange={(e) => handleExpenseDateChange(new Date(e.target.value))}
                 variant="outlined"
               />
+
               <TextField
                 label="Description"
                 fullWidth
@@ -577,6 +609,15 @@ const AdminPanel: React.FC<{ token: string }> = ({ token }) => {
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                 variant="outlined"
               />
+              {/* userID */}
+              <TextField
+                label="User ID"
+                type="number"
+                fullWidth
+                value={(formData as Budget).userID || ''}
+                onChange={(e) => setFormData({ ...formData, userID: parseInt(e.target.value) })}
+                variant="outlined"
+              />
               <TextField
                 label="Amount"
                 type="number"
@@ -591,7 +632,8 @@ const AdminPanel: React.FC<{ token: string }> = ({ token }) => {
                 fullWidth
                 InputLabelProps={{ shrink: true }}
                 value={(formData as Budget).monthYear ? (formData as Budget).monthYear.split('T')[0] : ''}
-                onChange={(e) => setFormData({ ...formData, monthYear: e.target.value })}
+                // Use the handleDateChange function to convert the selected date to UTC
+                onChange={(e) => handleDateChange(new Date(e.target.value))}
                 variant="outlined"
               />
             </Stack>
@@ -603,13 +645,6 @@ const AdminPanel: React.FC<{ token: string }> = ({ token }) => {
                 fullWidth
                 value={(formData as User).email || ''}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                variant="outlined"
-              />
-              <TextField
-                label="Role"
-                fullWidth
-                value={(formData as User).role || ''}
-                onChange={(e) => setFormData({ ...formData, role: e.target.value })}
                 variant="outlined"
               />
               {!(formData as User).userID && (
@@ -639,7 +674,3 @@ const AdminPanel: React.FC<{ token: string }> = ({ token }) => {
 };
 
 export default AdminPanel;
-
-
-
-
