@@ -27,6 +27,7 @@ namespace KaziChapChap.API.Controllers
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegistrationDto registrationDto)
         {
+            // The AuthService handles password hashing using SHA256.
             var user = new User { Email = registrationDto.Email };
             var registeredUser = await _authService.Register(user, registrationDto.Password);
             if (registeredUser == null)
@@ -49,7 +50,6 @@ namespace KaziChapChap.API.Controllers
             return Ok(response);
         }
 
-        // New Logout Endpoint
         [HttpPost("logout")]
         public IActionResult Logout()
         {
@@ -97,3 +97,5 @@ namespace KaziChapChap.API.Controllers
         public required string Message { get; set; }
     }
 }
+
+
