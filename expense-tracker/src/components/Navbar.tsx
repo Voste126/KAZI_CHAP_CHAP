@@ -19,7 +19,6 @@ interface JwtPayload {
   role: string;
 }
 
-// Theme colors (adjust as needed)
 const themeColors = {
   primary: '#006400',   // Dark Green
   secondary: '#8B4513', // Saddle Brown
@@ -46,7 +45,7 @@ const Navbar: React.FC = () => {
     }
   }
 
-  // Define menu items; conditionally add the Admin Panel if user is an admin.
+  // Define menu items; conditionally add the Admin Panel and Data Export if user is an admin.
   const menuItems = [
     { label: 'Home', path: '/' },
     { label: 'About Us', path: '/about' },
@@ -54,6 +53,7 @@ const Navbar: React.FC = () => {
     { label: 'Expenses', path: '/expenses' },
     { label: 'Visuals', path: '/visual' },
     ...(isAdmin ? [{ label: 'Admin Panel', path: '/admin' }] : []),
+    ...(isAdmin ? [{ label: 'Data Export', path: '/data-export' }] : []),
   ];
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
@@ -65,7 +65,6 @@ const Navbar: React.FC = () => {
   };
 
   const handleLogout = () => {
-    // Remove token and navigate to login page
     localStorage.removeItem('jwtToken');
     navigate('/login');
   };
@@ -88,11 +87,7 @@ const Navbar: React.FC = () => {
             >
               <MenuIcon />
             </IconButton>
-            <Menu
-              anchorEl={anchorEl}
-              open={Boolean(anchorEl)}
-              onClose={handleMenuClose}
-            >
+            <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
               {menuItems.map((item) => (
                 <MenuItem
                   key={item.label}
@@ -104,7 +99,6 @@ const Navbar: React.FC = () => {
                   {item.label}
                 </MenuItem>
               ))}
-              {/* Conditionally render Login/Sign Up or Logout */}
               {!token ? (
                 <MenuItem
                   onClick={() => {
@@ -129,15 +123,10 @@ const Navbar: React.FC = () => {
         ) : (
           <Box sx={{ display: 'flex', gap: 2 }}>
             {menuItems.map((item) => (
-              <Button
-                key={item.label}
-                color="inherit"
-                onClick={() => navigate(item.path)}
-              >
+              <Button key={item.label} color="inherit" onClick={() => navigate(item.path)}>
                 {item.label}
               </Button>
             ))}
-            {/* Conditionally render Login/Sign Up or Logout */}
             {!token ? (
               <Button color="inherit" onClick={() => navigate('/login')}>
                 Login/Sign Up
@@ -155,6 +144,7 @@ const Navbar: React.FC = () => {
 };
 
 export default Navbar;
+
 
 
 

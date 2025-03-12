@@ -1,7 +1,7 @@
 // src/App.tsx
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { jwtDecode } from 'jwt-decode';
+import { jwtDecode } from 'jwt-decode';// make sure this package is installed
 import AuthForm from './components/Auth/AuthForm';
 import NotFound from './pages/NotFound';
 import Dashboard from './components/BudgetManager';
@@ -12,11 +12,13 @@ import VisualCharts from './components/visualCharts';
 import About from './pages/About';
 import Logout from './components/Auth/Logout';
 import AdminPanel from './components/AdminPanel';
+import DataExport from './pages/DataExport';
 
 interface JwtPayload {
   exp: number;
   email: string;
   role: string;
+  userID: number; // assuming the token now includes userID
 }
 
 const App: React.FC = () => {
@@ -50,7 +52,12 @@ const App: React.FC = () => {
             <Route path="/expenses" element={<ExpensesList token={token} />} />
             <Route path="/expense/new" element={<ExpenseForm token={token} />} />
             <Route path="/expense/edit/:id" element={<ExpenseForm token={token} />} />
-            {isAdmin && <Route path="/admin" element={<AdminPanel token={token} />} />}
+            {isAdmin && (
+              <>
+                <Route path="/admin" element={<AdminPanel token={token} />} />
+                <Route path="/data-export" element={<DataExport />} />
+              </>
+            )}
             <Route path="/logout" element={<Logout setToken={setToken} />} />
             {/* Fallback: if admin, redirect to /admin; otherwise to /expenses */}
             <Route path="*" element={<Navigate to={isAdmin ? "/admin" : "/expenses"} replace />} />
@@ -67,4 +74,5 @@ const App: React.FC = () => {
 };
 
 export default App;
+
 
