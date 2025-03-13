@@ -7,7 +7,9 @@ using System.Collections.Generic;
 using KaziChapChap.Core.Models; // Data models: Budget, Expense, User, etc.
 using KaziChapChap.Data;
 using System.Security.Cryptography;
+using KaziChapChap.Core.Services; // For IAuthService
 using System.Text;
+
 namespace KaziChapChap.API.Controllers
 {
     /// <summary>
@@ -20,10 +22,12 @@ namespace KaziChapChap.API.Controllers
     public class AdminPanelController : ControllerBase
     {
         private readonly KaziDbContext _context;
+        private readonly IAuthService _authService;
 
-        public AdminPanelController(KaziDbContext context)
+        public AdminPanelController(KaziDbContext context, IAuthService authService)
         {
             _context = context;
+            _authService = authService;
         }
 
         #region Budgets Endpoints
@@ -96,11 +100,9 @@ namespace KaziChapChap.API.Controllers
             await _context.SaveChangesAsync();
             return NoContent();
         }
-
         #endregion
 
         #region Expenses Endpoints
-
         [HttpGet("expenses")]
         public async Task<ActionResult<IEnumerable<Expense>>> GetAllExpenses()
         {
@@ -170,13 +172,9 @@ namespace KaziChapChap.API.Controllers
             await _context.SaveChangesAsync();
             return NoContent();
         }
-
         #endregion
 
-
-
         #region Users Endpoints
-
         [HttpGet("users")]
         public async Task<ActionResult<IEnumerable<User>>> GetAllUsers()
         {
@@ -200,7 +198,7 @@ namespace KaziChapChap.API.Controllers
         public class CreateUserDto
         {
             public string? Email { get; set; }
-            public string? Password { get; set; } // This will be stored as plain text in PasswordHash.
+            public string? Password { get; set; }
         }
 
         [HttpPost("users")]
@@ -209,12 +207,16 @@ namespace KaziChapChap.API.Controllers
             var user = new User
             {
                 Email = dto.Email,
-                PasswordHash = dto.Password, // Store plain text password directly.
-                CreatedAt = DateTime.UtcNow,
+                CreatedAt = System.DateTime.UtcNow
             };
 
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
+            // Use the AuthService to register the user which hashes the password.
+            if (string.IsNullOrEmpty(dto.Password))
+            {
+                return BadRequest("Password cannot be null or empty.");
+            }
+
+            user = await _authService.Register(user, dto.Password);
 
             return CreatedAtAction(nameof(GetUser), new { id = user.UserID }, user);
         }
@@ -241,28 +243,39 @@ namespace KaziChapChap.API.Controllers
                 return NotFound();
             }
 
-            // Update properties.
             user.Email = dto.Email;
+
             if (!string.IsNullOrWhiteSpace(dto.Password))
             {
-                user.PasswordHash = dto.Password;
-            }
-
-            _context.Entry(user).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!_context.Users.Any(u => u.UserID == id))
+                // Use the ResetPassword method to update the password hash.
+                if (string.IsNullOrEmpty(user.Email))
                 {
-                    return NotFound();
+                    return BadRequest("User email cannot be null or empty.");
                 }
-                else
+
+                bool resetResult = await _authService.ResetPassword(user.Email, dto.Password);
+                if (!resetResult)
                 {
-                    throw;
+                    return BadRequest("Failed to reset password.");
+                }
+            }
+            else
+            {
+                _context.Entry(user).State = EntityState.Modified;
+                try
+                {
+                    await _context.SaveChangesAsync();
+                }
+                catch (DbUpdateConcurrencyException)
+                {
+                    if (!_context.Users.Any(u => u.UserID == id))
+                    {
+                        return NotFound();
+                    }
+                    else
+                    {
+                        throw;
+                    }
                 }
             }
 
@@ -282,8 +295,8 @@ namespace KaziChapChap.API.Controllers
             await _context.SaveChangesAsync();
             return NoContent();
         }
-
         #endregion
     }
 }
+
 

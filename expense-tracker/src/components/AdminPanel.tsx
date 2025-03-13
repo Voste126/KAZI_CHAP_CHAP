@@ -1,6 +1,7 @@
 // src/components/AdminPanel.tsx
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';  // <-- Added import for navigation
 import {
   AppBar,
   Tabs,
@@ -77,14 +78,19 @@ interface Budget {
   monthYear: string; // e.g., "2024-03-01T00:00:00Z"
 }
 
+// Updated User model: removed role and added passwordHash and createdAt.
+// (An optional 'password' field is included only for new user input.)
 interface User {
   userID: number;
   email: string;
-  role: string;
+  passwordHash: string;
+  createdAt: string;
   password?: string;
 }
 
 const AdminPanel: React.FC<{ token: string }> = ({ token }) => {
+  const navigate = useNavigate();  // <-- Initialize navigate hook
+
   const [activeTab, setActiveTab] = useState(0);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [budgets, setBudgets] = useState<Budget[]>([]);
@@ -106,7 +112,14 @@ const AdminPanel: React.FC<{ token: string }> = ({ token }) => {
       ]);
       setExpenses(expensesRes.data);
       setBudgets(budgetsRes.data);
-      setUsers(usersRes.data);
+      // Process users: remove the plain 'password' field if present so that only the hashed value is stored.
+      const processedUsers = usersRes.data.map((user: User) => {
+        if (user.password) {
+          delete user.password;
+        }
+        return user;
+      });
+      setUsers(processedUsers);
     } catch {
       setError('Failed to fetch data for the admin panel.');
     }
@@ -245,6 +258,22 @@ const AdminPanel: React.FC<{ token: string }> = ({ token }) => {
           <Typography variant="h6" sx={{ flexGrow: 1 }}>
             Admin Panel
           </Typography>
+          {/* Back Home Button */}
+          <Button
+            variant="contained"
+            onClick={() => navigate("/")}
+            sx={{
+              color: themeColors.primary,
+              borderColor: themeColors.primary,
+              backgroundColor: themeColors.background,
+              textTransform: 'none',
+              '&:hover': {
+                backgroundColor: themeColors.accent,
+              },
+            }}
+          >
+            Back Home
+          </Button>
         </Toolbar>
         <Tabs
           value={activeTab}
@@ -495,7 +524,8 @@ const AdminPanel: React.FC<{ token: string }> = ({ token }) => {
                     <TableRow>
                       <TableCell sx={{ fontWeight: 'bold', color: themeColors.primary }}>ID</TableCell>
                       <TableCell sx={{ fontWeight: 'bold', color: themeColors.primary }}>Email</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', color: themeColors.primary }}>Role</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', color: themeColors.primary }}>Password Hash</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', color: themeColors.primary }}>Created At</TableCell>
                       <TableCell sx={{ fontWeight: 'bold', color: themeColors.primary }}>Actions</TableCell>
                     </TableRow>
                   </TableHead>
@@ -504,7 +534,8 @@ const AdminPanel: React.FC<{ token: string }> = ({ token }) => {
                       <TableRow key={user.userID}>
                         <TableCell>{user.userID}</TableCell>
                         <TableCell>{user.email}</TableCell>
-                        <TableCell>{user.role}</TableCell>
+                        <TableCell>{user.passwordHash}</TableCell>
+                        <TableCell>{new Date(user.createdAt).toLocaleString()}</TableCell>
                         <TableCell>
                           <Stack direction="row" spacing={1}>
                             <Button variant="outlined" onClick={() => handleOpenDialog('user', user)}>
@@ -646,4 +677,5 @@ const AdminPanel: React.FC<{ token: string }> = ({ token }) => {
 };
 
 export default AdminPanel;
+
 
