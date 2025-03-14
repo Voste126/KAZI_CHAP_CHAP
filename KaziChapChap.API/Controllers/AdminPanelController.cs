@@ -4,10 +4,10 @@ using Microsoft.EntityFrameworkCore;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.Generic;
-using KaziChapChap.Core.Models; // Data models: Budget, Expense, User, etc.
+using KaziChapChap.Core.Models;
 using KaziChapChap.Data;
+using KaziChapChap.Core.Services;
 using System.Security.Cryptography;
-using KaziChapChap.Core.Services; // For IAuthService
 using System.Text;
 
 namespace KaziChapChap.API.Controllers
@@ -31,17 +31,23 @@ namespace KaziChapChap.API.Controllers
         }
 
         #region Budgets Endpoints
+
         [HttpGet("budgets")]
         public async Task<ActionResult<IEnumerable<Budget>>> GetAllBudgets()
         {
-            var budgets = await _context.Budgets.ToListAsync();
+            // Include related expenses for full details.
+            var budgets = await _context.Budgets
+                .Include(b => b.Expenses)
+                .ToListAsync();
             return Ok(budgets);
         }
 
         [HttpGet("budgets/{id}")]
         public async Task<ActionResult<Budget>> GetBudget(int id)
         {
-            var budget = await _context.Budgets.FindAsync(id);
+            var budget = await _context.Budgets
+                .Include(b => b.Expenses)
+                .FirstOrDefaultAsync(b => b.BudgetID == id);
             if (budget == null)
             {
                 return NotFound();
@@ -66,7 +72,16 @@ namespace KaziChapChap.API.Controllers
                 return BadRequest("Budget ID mismatch.");
             }
 
-            _context.Entry(budget).State = EntityState.Modified;
+            var existingBudget = await _context.Budgets.FindAsync(id);
+            if (existingBudget == null)
+            {
+                return NotFound();
+            }
+
+            // Update allowed properties.
+            existingBudget.Category = budget.Category;
+            existingBudget.Amount = budget.Amount;
+            existingBudget.MonthYear = budget.MonthYear;
 
             try
             {
@@ -103,9 +118,11 @@ namespace KaziChapChap.API.Controllers
         #endregion
 
         #region Expenses Endpoints
+
         [HttpGet("expenses")]
         public async Task<ActionResult<IEnumerable<Expense>>> GetAllExpenses()
         {
+            // Admin can see all expenses.
             var expenses = await _context.Expenses.ToListAsync();
             return Ok(expenses);
         }
@@ -124,6 +141,24 @@ namespace KaziChapChap.API.Controllers
         [HttpPost("expenses")]
         public async Task<ActionResult<Expense>> CreateExpense(Expense expense)
         {
+            // For admin, we assume the expense's UserID and BudgetID are provided.
+            // Validate that the budget exists.
+            var budget = await _context.Budgets.FindAsync(expense.BudgetID);
+            if (budget == null)
+            {
+                return BadRequest("Invalid budget specified.");
+            }
+
+            // Calculate current total expenses for the budget.
+            var totalExpenses = _context.Expenses
+                .Where(e => e.BudgetID == expense.BudgetID)
+                .Sum(e => e.Amount);
+
+            if (totalExpenses + expense.Amount > budget.Amount)
+            {
+                return BadRequest("Adding this expense would exceed the budget.");
+            }
+
             _context.Expenses.Add(expense);
             await _context.SaveChangesAsync();
 
@@ -138,7 +173,14 @@ namespace KaziChapChap.API.Controllers
                 return BadRequest("Expense ID mismatch.");
             }
 
-            _context.Entry(expense).State = EntityState.Modified;
+            var existingExpense = await _context.Expenses.FindAsync(id);
+            if (existingExpense == null)
+            {
+                return NotFound();
+            }
+
+            // Optionally, if BudgetID is being updated, you could validate the new budget similarly.
+            _context.Entry(existingExpense).CurrentValues.SetValues(expense);
 
             try
             {
@@ -170,11 +212,13 @@ namespace KaziChapChap.API.Controllers
 
             _context.Expenses.Remove(expense);
             await _context.SaveChangesAsync();
+
             return NoContent();
         }
         #endregion
 
         #region Users Endpoints
+
         [HttpGet("users")]
         public async Task<ActionResult<IEnumerable<User>>> GetAllUsers()
         {
@@ -194,7 +238,6 @@ namespace KaziChapChap.API.Controllers
         }
 
         // DTO for creating a user.
-        // The client sends "email" and "password" (plain text) in the request body.
         public class CreateUserDto
         {
             public string? Email { get; set; }
@@ -210,7 +253,6 @@ namespace KaziChapChap.API.Controllers
                 CreatedAt = System.DateTime.UtcNow
             };
 
-            // Use the AuthService to register the user which hashes the password.
             if (string.IsNullOrEmpty(dto.Password))
             {
                 return BadRequest("Password cannot be null or empty.");
@@ -221,12 +263,11 @@ namespace KaziChapChap.API.Controllers
             return CreatedAtAction(nameof(GetUser), new { id = user.UserID }, user);
         }
 
-        // DTO for updating a user.
         public class UpdateUserDto
         {
             public int UserID { get; set; }
             public string? Email { get; set; }
-            public string? Password { get; set; } // If provided, update PasswordHash.
+            public string? Password { get; set; }
         }
 
         [HttpPut("users/{id}")]
@@ -247,7 +288,6 @@ namespace KaziChapChap.API.Controllers
 
             if (!string.IsNullOrWhiteSpace(dto.Password))
             {
-                // Use the ResetPassword method to update the password hash.
                 if (string.IsNullOrEmpty(user.Email))
                 {
                     return BadRequest("User email cannot be null or empty.");
@@ -298,5 +338,6 @@ namespace KaziChapChap.API.Controllers
         #endregion
     }
 }
+
 
 

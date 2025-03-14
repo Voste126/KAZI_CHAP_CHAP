@@ -16,6 +16,7 @@ import {
   Button,
   Grid,
   Alert,
+  MenuItem,
 } from '@mui/material';
 
 const themeColors = {
@@ -25,6 +26,13 @@ const themeColors = {
   text: '#2F4F4F',      // Dark Slate Gray
   accent: '#FFD700',    // Gold
 };
+
+interface Budget {
+  budgetID: number;
+  category: string;
+  amount: number;
+  monthYear: string;
+}
 
 interface ExpenseFormProps {
   token: string;
@@ -43,8 +51,29 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ token }) => {
     date: new Date().toISOString(),
     description: '',
     createdAt: new Date().toISOString(),
+    budgetID: 0, // New field to link this expense to a budget
   });
+  const [budgets, setBudgets] = useState<Budget[]>([]);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // Fetch available budgets for the dropdown
+  useEffect(() => {
+    axios
+      .get(`${API_URL}/api/budgets`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then((response) => {
+        // Check if the returned data has a $values property
+        let data = response.data;
+        if (data && data.$values) {
+          data = data.$values;
+        }
+        setBudgets(data);
+      })
+      .catch((error) => {
+        console.error('Error fetching budgets:', error);
+      });
+  }, [token]);
 
   useEffect(() => {
     if (isEdit && id) {
@@ -60,14 +89,29 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ token }) => {
     }
   }, [isEdit, id, token]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
-    setExpense((prev) => ({ ...prev, [name]: value }));
+    // For numeric fields, convert the value to a number
+    if (name === 'amount' || name === 'budgetID') {
+      setExpense((prev) => ({ ...prev, [name]: Number(value) }));
+    } else {
+      setExpense((prev) => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
+    if (expense.amount < 0) {
+      setErrorMsg('Expense amount cannot be negative');
+      return;
+    }
+    if (!expense.budgetID || expense.budgetID === 0) {
+      setErrorMsg('Please select a valid budget.');
+      return;
+    }
     try {
       if (isEdit) {
         await axios.put(`${API_URL}/api/expenses/${id}`, expense, {
@@ -91,7 +135,10 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ token }) => {
       {/* AppBar */}
       <AppBar position="static" sx={{ backgroundColor: themeColors.primary }}>
         <Toolbar>
-          <Typography variant="h6" sx={{ flexGrow: 1, color: themeColors.background }}>
+          <Typography
+            variant="h6"
+            sx={{ flexGrow: 1, color: themeColors.background }}
+          >
             {isEdit ? 'Edit Expense' : 'Add Expense'}
           </Typography>
           <Button color="inherit" onClick={() => navigate('/expenses')}>
@@ -101,10 +148,23 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ token }) => {
       </AppBar>
 
       {/* Full-screen layout */}
-      <Box sx={{ minHeight: '100vh', width: '100vw', display: 'flex', flexDirection: 'column', backgroundColor: themeColors.background }}>
+      <Box
+        sx={{
+          minHeight: '100vh',
+          width: '100vw',
+          display: 'flex',
+          flexDirection: 'column',
+          backgroundColor: themeColors.background,
+        }}
+      >
         <Container maxWidth="sm" sx={{ mt: 4, mb: 4 }}>
           <Paper elevation={3} sx={{ p: 4 }}>
-            <Typography variant="h5" align="center" gutterBottom sx={{ color: themeColors.primary }}>
+            <Typography
+              variant="h5"
+              align="center"
+              gutterBottom
+              sx={{ color: themeColors.primary }}
+            >
               {isEdit ? 'Edit Expense' : 'Add Expense'}
             </Typography>
             {errorMsg && (
@@ -112,7 +172,12 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ token }) => {
                 {errorMsg}
               </Alert>
             )}
-            <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 2 }}>
+            <Box
+              component="form"
+              onSubmit={handleSubmit}
+              noValidate
+              sx={{ mt: 2 }}
+            >
               <Grid container spacing={2}>
                 <Grid item xs={12}>
                   <TextField
@@ -134,8 +199,36 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ token }) => {
                     value={expense.amount}
                     onChange={handleChange}
                     required
+                    error={expense.amount < 0}
+                    helperText={
+                      expense.amount < 0 ? 'Amount cannot be negative' : ''
+                    }
                     variant="outlined"
                   />
+                </Grid>
+                {/* New Budget Selector */}
+                <Grid item xs={12}>
+                  <TextField
+                    select
+                    fullWidth
+                    label="Budget"
+                    name="budgetID"
+                    value={expense.budgetID}
+                    onChange={handleChange}
+                    required
+                    variant="outlined"
+                  >
+                    <MenuItem value={0} disabled>
+                      Select Budget
+                    </MenuItem>
+                    {budgets.map((budget) => (
+                      <MenuItem key={budget.budgetID} value={budget.budgetID}>
+                        {budget.category} - KSH{' '}
+                        {budget.amount.toFixed(2)} -{' '}
+                        {new Date(budget.monthYear).toLocaleDateString()}
+                      </MenuItem>
+                    ))}
+                  </TextField>
                 </Grid>
                 <Grid item xs={12}>
                   <TextField
@@ -147,8 +240,9 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ token }) => {
                     value={expense.date.split('T')[0]}
                     onChange={(e) => {
                       const datePart = e.target.value;
-                      const timePart = expense.date.split('T')[1] || '00:00:00.000Z';
-                      setExpense(prev => ({
+                      const timePart =
+                        expense.date.split('T')[1] || '00:00:00.000Z';
+                      setExpense((prev) => ({
                         ...prev,
                         date: new Date(`${datePart}T${timePart}`).toISOString(),
                       }));
@@ -175,7 +269,12 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ token }) => {
                 fullWidth
                 variant="contained"
                 color="primary"
-                sx={{ mt: 3 , backgroundColor: themeColors.primary, color: themeColors.background }}
+                sx={{
+                  mt: 3,
+                  backgroundColor: themeColors.primary,
+                  color: themeColors.background,
+                }}
+                disabled={expense.amount < 0 || expense.budgetID === 0}
               >
                 {isEdit ? 'Update Expense' : 'Create Expense'}
               </Button>
@@ -188,7 +287,3 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ token }) => {
 };
 
 export default ExpenseForm;
-
-
-
-

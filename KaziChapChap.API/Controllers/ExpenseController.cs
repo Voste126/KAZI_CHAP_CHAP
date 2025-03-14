@@ -74,21 +74,41 @@ namespace KaziChapChap.API.Controllers
         [HttpPost]
         public async Task<ActionResult<Expense>> PostExpense(Expense expense)
         {
-            // Retrieve the authenticated user's ID from JWT claims.
+            // Retrieve the authenticated user's ID from JWT claims
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
             if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int authenticatedUserId))
             {
                 return Unauthorized();
             }
 
-            // Override any provided UserID with the authenticated user's ID.
+            // Ensure the expense is associated with the authenticated user
             expense.UserID = authenticatedUserId;
 
+            // Retrieve the budget for the expense
+            var budget = await _context.Budgets.FindAsync(expense.BudgetID);
+            if (budget == null || budget.UserID != authenticatedUserId)
+            {
+                return BadRequest("Invalid budget specified.");
+            }
+
+            // Calculate current total expenses for the budget
+            var totalExpenses = _context.Expenses
+                .Where(e => e.BudgetID == expense.BudgetID)
+                .Sum(e => e.Amount);
+
+            // Check if adding this expense exceeds the budget
+            if (totalExpenses + expense.Amount > budget.Amount)
+            {
+                return BadRequest("Adding this expense would exceed your budget.");
+            }
+
+            // Add and save the expense
             _context.Expenses.Add(expense);
             await _context.SaveChangesAsync();
 
             return CreatedAtAction(nameof(GetExpense), new { id = expense.ExpenseID }, expense);
         }
+
 
         // PUT: api/Expenses/5
         [HttpPut("{id}")]

@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json.Serialization;
 using KaziChapChap.Core.Services; // Ensure this is the correct namespace for IAuthService
 using KaziChapChap.Data;          // Ensure this is the correct namespace for AuthService and KaziDbContext
 using Microsoft.EntityFrameworkCore;
@@ -14,7 +15,11 @@ public partial class Program
         builder.Logging.AddConsole();
 
         // Add services to the container.
-        builder.Services.AddControllers();
+        builder.Services.AddControllers()
+            .AddJsonOptions(options =>
+            {
+                options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.Preserve;
+            });
         builder.Services.AddSwaggerGen();
         builder.Services.AddEndpointsApiExplorer();
 
@@ -86,7 +91,11 @@ public partial class Program
             app.UseSwaggerUI();
         }
 
-        app.MapGet("/", () => "Welcome to the KaziChapChap API!");
+        app.MapGet("/", context =>
+        {
+            context.Response.Redirect("http://localhost:5181/swagger/index.html");
+            return Task.CompletedTask;
+        });
 
         // Use CORS before HTTPS redirection if needed.
         app.UseCors("DevelopmentCorsPolicy");
@@ -109,6 +118,7 @@ public partial class Program
         app.Run();
     }
 }
+
 
 
 

@@ -56,7 +56,17 @@ const ExpensesList: React.FC<{ token: string }> = ({ token }) => {
         const response = await axios.get(`${API_URL}/api/expenses`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        setExpenses(response.data);
+        // Check if the response data contains $values
+        let data = response.data;
+        if (data && data.$values) {
+          data = data.$values;
+        }
+        if (Array.isArray(data)) {
+          setExpenses(data);
+        } else {
+          console.error("Unexpected data format:", data);
+          setExpenses([]);
+        }
         setLoading(false);
       } catch (err) {
         console.error('Error fetching expenses:', err);
@@ -66,6 +76,8 @@ const ExpensesList: React.FC<{ token: string }> = ({ token }) => {
     };
     fetchExpenses();
   }, [token]);
+
+
 
   const handleDelete = async (id: number) => {
     try {

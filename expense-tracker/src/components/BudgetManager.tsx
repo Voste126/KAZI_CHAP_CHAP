@@ -60,13 +60,19 @@ const Dashboard: React.FC = () => {
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [openDialog, setOpenDialog] = useState<boolean>(false);
+
+  // Dialog open states and other state variables...
+  const [openAddDialog, setOpenAddDialog] = useState<boolean>(false);
+  const [openEditDialog, setOpenEditDialog] = useState<boolean>(false);
+  const [openDeleteDialog, setOpenDeleteDialog] = useState<boolean>(false);
+  const [budgetToDelete, setBudgetToDelete] = useState<number | null>(null);
   const todayStr = new Date().toISOString().split('T')[0];
   const [newBudget, setNewBudget] = useState<{ category: string; amount: number; monthYear: string }>({
     category: '',
     amount: 0,
     monthYear: todayStr,
   });
+  const [editingBudget, setEditingBudget] = useState<{ budgetID: number; category: string; amount: number; monthYear: string } | null>(null);
 
   const token = localStorage.getItem('jwtToken');
   const navigate = useNavigate();
@@ -74,10 +80,15 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     const fetchBudgets = async () => {
       try {
-        const response = await axios.get<Budget[]>(`${API_URL}/api/budgets`, {
+        const response = await axios.get(`${API_URL}/api/budgets`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        setBudgets(response.data);
+        // Check if the response has a $values property
+        let data = response.data;
+        if (data && data.$values) {
+          data = data.$values;
+        }
+        setBudgets(data);
         setLoading(false);
       } catch {
         setError('Failed to fetch budgets');
@@ -87,7 +98,12 @@ const Dashboard: React.FC = () => {
     fetchBudgets();
   }, [token]);
 
+  // Add, Edit, and Delete Handlers...
   const handleAddBudget = async () => {
+    if (newBudget.amount < 0) {
+      setError('Budget amount cannot be negative');
+      return;
+    }
     try {
       const budgetToSend = {
         ...newBudget,
@@ -99,19 +115,50 @@ const Dashboard: React.FC = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setBudgets([...budgets, response.data]);
-      setOpenDialog(false);
+      setOpenAddDialog(false);
       setNewBudget({ category: '', amount: 0, monthYear: todayStr });
     } catch {
       setError('Failed to add budget');
     }
   };
 
-  const handleDeleteBudget = async (id: number) => {
+  const handleUpdateBudget = async () => {
+    if (editingBudget && editingBudget.amount < 0) {
+      setError('Budget amount cannot be negative');
+      return;
+    }
+    if (editingBudget) {
+      try {
+        const budgetToSend = {
+          ...editingBudget,
+          monthYear: editingBudget.monthYear + 'T00:00:00Z',
+        };
+        await axios.put(`${API_URL}/api/budgets/${editingBudget.budgetID}`, budgetToSend, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setBudgets(budgets.map(b => b.budgetID === editingBudget.budgetID ? { ...b, ...editingBudget } : b));
+        setOpenEditDialog(false);
+        setEditingBudget(null);
+      } catch {
+        setError('Failed to update budget');
+      }
+    }
+  };
+
+  const confirmDeleteBudget = (id: number) => {
+    setBudgetToDelete(id);
+    setOpenDeleteDialog(true);
+  };
+
+  const handleDeleteBudget = async () => {
+    if (budgetToDelete === null) return;
     try {
-      await axios.delete(`${API_URL}/api/budgets/${id}`, {
+      await axios.delete(`${API_URL}/api/budgets/${budgetToDelete}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setBudgets(budgets.filter((b) => b.budgetID !== id));
+      setBudgets(budgets.filter((b) => b.budgetID !== budgetToDelete));
+      setOpenDeleteDialog(false);
+      setBudgetToDelete(null);
     } catch {
       setError('Failed to delete budget');
     }
@@ -177,7 +224,7 @@ const Dashboard: React.FC = () => {
                     Total Budget
                   </Typography>
                   <Typography variant="h5" sx={{ color: themeColors.primary }}>
-                    ${totalBudget.toFixed(2)}
+                    KSH {totalBudget.toFixed(2)}
                   </Typography>
                 </CardContent>
               </Card>
@@ -234,10 +281,26 @@ const Dashboard: React.FC = () => {
                     {budgets.map((budget) => (
                       <TableRow key={budget.budgetID}>
                         <TableCell>{budget.category}</TableCell>
-                        <TableCell>${budget.amount.toFixed(2)}</TableCell>
+                        <TableCell>KSH {budget.amount.toFixed(2)}</TableCell>
                         <TableCell>{new Date(budget.monthYear).toLocaleDateString()}</TableCell>
                         <TableCell>
-                          <Button variant="contained" color="error" onClick={() => handleDeleteBudget(budget.budgetID)}>
+                          <Button
+                            variant="contained"
+                            color="primary"
+                            sx={{ mr: 1 }}
+                            onClick={() => {
+                              setEditingBudget({
+                                budgetID: budget.budgetID,
+                                category: budget.category,
+                                amount: budget.amount,
+                                monthYear: budget.monthYear.split('T')[0],
+                              });
+                              setOpenEditDialog(true);
+                            }}
+                          >
+                            Edit
+                          </Button>
+                          <Button variant="contained" color="error" onClick={() => confirmDeleteBudget(budget.budgetID)}>
                             Delete
                           </Button>
                         </TableCell>
@@ -248,7 +311,7 @@ const Dashboard: React.FC = () => {
               </TableContainer>
             )}
             <Stack direction="row" justifyContent="flex-end" sx={{ mt: 2 }}>
-              <Button variant="contained" color="primary" onClick={() => setOpenDialog(true)}>
+              <Button variant="contained" color="primary" onClick={() => setOpenAddDialog(true)}>
                 Add Budget
               </Button>
             </Stack>
@@ -256,7 +319,7 @@ const Dashboard: React.FC = () => {
         </Container>
 
         {/* Add Budget Dialog */}
-        <Dialog open={openDialog} onClose={() => setOpenDialog(false)} fullWidth maxWidth="sm">
+        <Dialog open={openAddDialog} onClose={() => setOpenAddDialog(false)} fullWidth maxWidth="sm">
           <DialogTitle>Add New Budget</DialogTitle>
           <DialogContent>
             <Stack spacing={2} sx={{ mt: 1 }}>
@@ -272,6 +335,8 @@ const Dashboard: React.FC = () => {
                 type="number"
                 fullWidth
                 value={newBudget.amount}
+                error={newBudget.amount < 0}
+                helperText={newBudget.amount < 0 ? 'Amount cannot be negative' : ''}
                 onChange={(e) =>
                   setNewBudget({ ...newBudget, amount: parseFloat(e.target.value) || 0 })
                 }
@@ -291,11 +356,76 @@ const Dashboard: React.FC = () => {
             </Stack>
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setOpenDialog(false)} color="secondary">
+            <Button onClick={() => setOpenAddDialog(false)} color="secondary">
               Cancel
             </Button>
-            <Button onClick={handleAddBudget} variant="contained" color="primary">
+            <Button onClick={handleAddBudget} variant="contained" color="primary" disabled={newBudget.amount < 0}>
               Add
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Edit Budget Dialog */}
+        <Dialog open={openEditDialog} onClose={() => setOpenEditDialog(false)} fullWidth maxWidth="sm">
+          <DialogTitle>Edit Budget</DialogTitle>
+          <DialogContent>
+            <Stack spacing={2} sx={{ mt: 1 }}>
+              <TextField
+                label="Category"
+                fullWidth
+                value={editingBudget?.category || ''}
+                onChange={(e) =>
+                  setEditingBudget(editingBudget ? { ...editingBudget, category: e.target.value } : null)
+                }
+                variant="outlined"
+              />
+              <TextField
+                label="Amount"
+                type="number"
+                fullWidth
+                value={editingBudget?.amount || 0}
+                error={(editingBudget?.amount || 0) < 0}
+                helperText={(editingBudget?.amount || 0) < 0 ? 'Amount cannot be negative' : ''}
+                onChange={(e) =>
+                  setEditingBudget(editingBudget ? { ...editingBudget, amount: parseFloat(e.target.value) || 0 } : null)
+                }
+                variant="outlined"
+              />
+              <TextField
+                label="Month/Year"
+                type="date"
+                fullWidth
+                InputLabelProps={{ shrink: true }}
+                value={editingBudget?.monthYear || todayStr}
+                onChange={(e) =>
+                  setEditingBudget(editingBudget ? { ...editingBudget, monthYear: e.target.value } : null)
+                }
+                variant="outlined"
+              />
+            </Stack>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setOpenEditDialog(false)} color="secondary">
+              Cancel
+            </Button>
+            <Button onClick={handleUpdateBudget} variant="contained" color="primary" disabled={(editingBudget?.amount || 0) < 0}>
+              Update
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Delete Confirmation Dialog */}
+        <Dialog open={openDeleteDialog} onClose={() => setOpenDeleteDialog(false)}>
+          <DialogTitle>Confirm Delete</DialogTitle>
+          <DialogContent>
+            <Typography>Are you sure you want to delete this budget?</Typography>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setOpenDeleteDialog(false)} color="secondary">
+              Cancel
+            </Button>
+            <Button onClick={handleDeleteBudget} variant="contained" color="error">
+              Confirm
             </Button>
           </DialogActions>
         </Dialog>
@@ -312,8 +442,4 @@ const Dashboard: React.FC = () => {
 };
 
 export default Dashboard;
-
-
-
-
 

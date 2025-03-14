@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("KaziChapChap.API")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+ba78fa4844d18158008226f27d096e7f3308811e")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+2ca792e30b97ca4093caeac8018ac41235d3997c")]
 [assembly: System.Reflection.AssemblyProductAttribute("KaziChapChap.API")]
 [assembly: System.Reflection.AssemblyTitleAttribute("KaziChapChap.API")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

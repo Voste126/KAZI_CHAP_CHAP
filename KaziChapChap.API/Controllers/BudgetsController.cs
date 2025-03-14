@@ -2,11 +2,11 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Linq;
-using System.Security.Claims;
 using System.Threading.Tasks;
 using System.Collections.Generic;
-using KaziChapChap.Core.Models; // Budget model
+using KaziChapChap.Core.Models;
 using KaziChapChap.Data;
+using System.Security.Claims;
 
 namespace KaziChapChap.API.Controllers
 {
@@ -20,51 +20,14 @@ namespace KaziChapChap.API.Controllers
     {
         private readonly KaziDbContext _context;
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="BudgetsController"/> class.
-        /// </summary>
-        /// <param name="context">The database context.</param>
         public BudgetsController(KaziDbContext context)
         {
             _context = context;
         }
 
-        /// <summary>
-        /// Gets all budgets for the authenticated user.
-        /// </summary>
-        /// <returns>A list of budgets.</returns>
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Budget>>> GetBudgets()
         {
-            // Retrieve the authenticated user's ID from the JWT claims.
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int authenticatedUserId))
-            {
-                return Unauthorized();
-            }
-
-            // Filter budgets by the authenticated user's ID.
-            var budgets = await _context.Budgets
-                .Where(b => b.UserID == authenticatedUserId)
-                .ToListAsync();
-
-            return Ok(budgets);
-        }
-
-        /// <summary>
-        /// Gets a specific budget by ID (only if it belongs to the authenticated user).
-        /// </summary>
-        /// <param name="id">The ID of the budget.</param>
-        /// <returns>The budget with the specified ID.</returns>
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Budget>> GetBudget(int id)
-        {
-            var budget = await _context.Budgets.FindAsync(id);
-            if (budget == null)
-            {
-                return NotFound();
-            }
-
             // Retrieve the authenticated user's ID.
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
             if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int authenticatedUserId))
@@ -72,30 +35,49 @@ namespace KaziChapChap.API.Controllers
                 return Unauthorized();
             }
 
-            // Ensure that the budget belongs to the authenticated user.
-            if (budget.UserID != authenticatedUserId)
-            {
-                return Unauthorized("You are not authorized to access this budget.");
-            }
+            // Get budgets that belong to the authenticated user, including related expenses.
+            var budgets = await _context.Budgets
+                .Include(b => b.Expenses)
+                .Where(b => b.UserID == authenticatedUserId)
+                .ToListAsync();
 
-            return budget;
+            return Ok(budgets);
         }
 
-        /// <summary>
-        /// Creates a new budget.
-        /// </summary>
-        /// <param name="budget">The budget to create.</param>
-        /// <returns>The created budget.</returns>
-        [HttpPost]
-        public async Task<ActionResult<Budget>> PostBudget(Budget budget)
+        [HttpGet("{id}")]
+        public async Task<ActionResult<Budget>> GetBudget(int id)
         {
-            // Get the authenticated user's ID from claims.
+            var budget = await _context.Budgets
+                .Include(b => b.Expenses)
+                .FirstOrDefaultAsync(b => b.BudgetID == id);
+            if (budget == null)
+            {
+                return NotFound();
+            }
+
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
             if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int authenticatedUserId))
             {
                 return Unauthorized();
             }
-            // Override any provided UserID with the authenticated user's ID.
+
+            if (budget.UserID != authenticatedUserId)
+            {
+                return Unauthorized("You are not authorized to access this budget.");
+            }
+
+            return Ok(budget);
+        }
+
+        [HttpPost]
+        public async Task<ActionResult<Budget>> PostBudget(Budget budget)
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int authenticatedUserId))
+            {
+                return Unauthorized();
+            }
+            // Ensure the budget is assigned to the authenticated user.
             budget.UserID = authenticatedUserId;
 
             _context.Budgets.Add(budget);
@@ -104,12 +86,6 @@ namespace KaziChapChap.API.Controllers
             return CreatedAtAction(nameof(GetBudget), new { id = budget.BudgetID }, budget);
         }
 
-        /// <summary>
-        /// Updates an existing budget.
-        /// </summary>
-        /// <param name="id">The ID of the budget to update.</param>
-        /// <param name="budget">The updated budget data.</param>
-        /// <returns>No content if successful.</returns>
         [HttpPut("{id}")]
         public async Task<IActionResult> PutBudget(int id, Budget budget)
         {
@@ -124,14 +100,12 @@ namespace KaziChapChap.API.Controllers
                 return NotFound();
             }
 
-            // Retrieve the authenticated user's ID.
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
             if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int authenticatedUserId))
             {
                 return Unauthorized();
             }
 
-            // Ensure the budget being updated belongs to the authenticated user.
             if (existingBudget.UserID != authenticatedUserId)
             {
                 return Unauthorized("You are not authorized to update this budget.");
@@ -148,7 +122,7 @@ namespace KaziChapChap.API.Controllers
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!_context.Budgets.Any(e => e.BudgetID == id))
+                if (!_context.Budgets.Any(b => b.BudgetID == id))
                 {
                     return NotFound();
                 }
@@ -161,11 +135,6 @@ namespace KaziChapChap.API.Controllers
             return NoContent();
         }
 
-        /// <summary>
-        /// Deletes a budget.
-        /// </summary>
-        /// <param name="id">The ID of the budget to delete.</param>
-        /// <returns>No content if successful.</returns>
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteBudget(int id)
         {
@@ -175,14 +144,12 @@ namespace KaziChapChap.API.Controllers
                 return NotFound();
             }
 
-            // Retrieve the authenticated user's ID.
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
             if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int authenticatedUserId))
             {
                 return Unauthorized();
             }
 
-            // Ensure the budget belongs to the authenticated user.
             if (budget.UserID != authenticatedUserId)
             {
                 return Unauthorized("You are not authorized to delete this budget.");
@@ -195,4 +162,5 @@ namespace KaziChapChap.API.Controllers
         }
     }
 }
+
 

@@ -63,6 +63,9 @@ namespace KaziChapChap.Data.Migrations
                     b.Property<decimal>("Amount")
                         .HasColumnType("decimal(10,2)");
 
+                    b.Property<int>("BudgetID")
+                        .HasColumnType("integer");
+
                     b.Property<string>("Category")
                         .HasColumnType("text");
 
@@ -79,6 +82,8 @@ namespace KaziChapChap.Data.Migrations
                         .HasColumnType("integer");
 
                     b.HasKey("ExpenseID");
+
+                    b.HasIndex("BudgetID");
 
                     b.HasIndex("UserID");
 
@@ -147,11 +152,19 @@ namespace KaziChapChap.Data.Migrations
 
             modelBuilder.Entity("KaziChapChap.Core.Models.Expense", b =>
                 {
+                    b.HasOne("KaziChapChap.Core.Models.Budget", "Budget")
+                        .WithMany("Expenses")
+                        .HasForeignKey("BudgetID")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("KaziChapChap.Core.Models.User", "User")
                         .WithMany("Expenses")
                         .HasForeignKey("UserID")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Budget");
 
                     b.Navigation("User");
                 });
@@ -165,6 +178,11 @@ namespace KaziChapChap.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("KaziChapChap.Core.Models.Budget", b =>
+                {
+                    b.Navigation("Expenses");
                 });
 
             modelBuilder.Entity("KaziChapChap.Core.Models.User", b =>

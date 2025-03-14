@@ -1,7 +1,7 @@
 // src/components/AdminPanel.tsx
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';  // <-- Added import for navigation
+import { useNavigate } from 'react-router-dom'; 
 import {
   AppBar,
   Tabs,
@@ -24,6 +24,8 @@ import {
   TextField,
   Alert,
   Stack,
+  MenuItem,
+  Snackbar,
 } from '@mui/material';
 import {
   ResponsiveContainer,
@@ -78,8 +80,6 @@ interface Budget {
   monthYear: string; // e.g., "2024-03-01T00:00:00Z"
 }
 
-// Updated User model: removed role and added passwordHash and createdAt.
-// (An optional 'password' field is included only for new user input.)
 interface User {
   userID: number;
   email: string;
@@ -89,7 +89,7 @@ interface User {
 }
 
 const AdminPanel: React.FC<{ token: string }> = ({ token }) => {
-  const navigate = useNavigate();  // <-- Initialize navigate hook
+  const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState(0);
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -97,12 +97,20 @@ const AdminPanel: React.FC<{ token: string }> = ({ token }) => {
   const [users, setUsers] = useState<User[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  // State for the Add/Edit dialog
+  // Dialog state for add/edit
   const [openDialog, setOpenDialog] = useState<boolean>(false);
   const [dialogType, setDialogType] = useState<'expense' | 'budget' | 'user' | null>(null);
   const [formData, setFormData] = useState<Partial<Expense | Budget | User>>({});
 
-  // Data fetching function—declared using useCallback to avoid unnecessary re-creation.
+  // Delete confirmation state
+  const [openDeleteConfirm, setOpenDeleteConfirm] = useState<boolean>(false);
+  const [deleteRecord, setDeleteRecord] = useState<{ type: 'expense' | 'budget' | 'user'; id: number } | null>(null);
+
+  // Snackbar state for deletion confirmation
+  const [snackbarOpen, setSnackbarOpen] = useState<boolean>(false);
+  const [snackbarMessage, setSnackbarMessage] = useState<string>('');
+
+  // Data fetching function
   const fetchData = useCallback(async () => {
     try {
       const [expensesRes, budgetsRes, usersRes] = await Promise.all([
@@ -110,10 +118,24 @@ const AdminPanel: React.FC<{ token: string }> = ({ token }) => {
         axios.get(`${API_URL}/api/AdminPanel/budgets`, { headers: { Authorization: `Bearer ${token}` } }),
         axios.get(`${API_URL}/api/AdminPanel/users`, { headers: { Authorization: `Bearer ${token}` } }),
       ]);
-      setExpenses(expensesRes.data);
-      setBudgets(budgetsRes.data);
-      // Process users: remove the plain 'password' field if present so that only the hashed value is stored.
-      const processedUsers = usersRes.data.map((user: User) => {
+
+      let expensesData = expensesRes.data;
+      if (expensesData && expensesData.$values) {
+        expensesData = expensesData.$values;
+      }
+      setExpenses(expensesData);
+
+      let budgetsData = budgetsRes.data;
+      if (budgetsData && budgetsData.$values) {
+        budgetsData = budgetsData.$values;
+      }
+      setBudgets(budgetsData);
+
+      let usersData = usersRes.data;
+      if (usersData && usersData.$values) {
+        usersData = usersData.$values;
+      }
+      const processedUsers = usersData.map((user: User) => {
         if (user.password) {
           delete user.password;
         }
@@ -125,28 +147,21 @@ const AdminPanel: React.FC<{ token: string }> = ({ token }) => {
     }
   }, [token]);
 
-  // Fetch data on component mount and when token changes.
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
-  // Handlers for date change
+  // Date change handlers
   const handleDateChange = (date: Date | null) => {
     if (!date) return;
     const utcDate = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-    setFormData(prev => ({
-      ...prev,
-      monthYear: utcDate.toISOString(),
-    }));
+    setFormData(prev => ({ ...prev, monthYear: utcDate.toISOString() }));
   };
 
   const handleExpenseDateChange = (date: Date | null) => {
     if (!date) return;
     const utcDate = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-    setFormData(prev => ({
-      ...prev,
-      date: utcDate.toISOString(),
-    }));
+    setFormData(prev => ({ ...prev, date: utcDate.toISOString() }));
   };
 
   const handleOpenDialog = (type: 'expense' | 'budget' | 'user', initialData: Partial<Expense | Budget | User> = {}) => {
@@ -163,6 +178,11 @@ const AdminPanel: React.FC<{ token: string }> = ({ token }) => {
 
   const handleSave = async () => {
     try {
+      // Validate non-negative amounts for expense and budget
+      if ((dialogType === 'expense' || dialogType === 'budget') && (formData as Expense | Budget).amount! < 0) {
+        setError('Amount cannot be negative.');
+        return;
+      }
       if (dialogType === 'expense') {
         if ((formData as Expense).expenseID) {
           await axios.put(
@@ -207,11 +227,15 @@ const AdminPanel: React.FC<{ token: string }> = ({ token }) => {
         }
       }
       handleCloseDialog();
-      // Re-fetch data to ensure the UI displays the updated record.
       fetchData();
     } catch {
       setError('Failed to save the record.');
     }
+  };
+
+  const confirmDelete = (type: 'expense' | 'budget' | 'user', id: number) => {
+    setDeleteRecord({ type, id });
+    setOpenDeleteConfirm(true);
   };
 
   const handleDelete = async (type: 'expense' | 'budget' | 'user', id: number) => {
@@ -223,7 +247,6 @@ const AdminPanel: React.FC<{ token: string }> = ({ token }) => {
       } else if (type === 'user') {
         await axios.delete(`${API_URL}/api/AdminPanel/users/${id}`, { headers: { Authorization: `Bearer ${token}` } });
       }
-      // Re-fetch data after deletion.
       fetchData();
     } catch {
       setError('Failed to delete the record.');
@@ -258,7 +281,6 @@ const AdminPanel: React.FC<{ token: string }> = ({ token }) => {
           <Typography variant="h6" sx={{ flexGrow: 1 }}>
             Admin Panel
           </Typography>
-          {/* Back Home Button */}
           <Button
             variant="contained"
             onClick={() => navigate("/")}
@@ -447,7 +469,7 @@ const AdminPanel: React.FC<{ token: string }> = ({ token }) => {
                             <Button variant="outlined" onClick={() => handleOpenDialog('expense', exp)}>
                               Edit
                             </Button>
-                            <Button variant="outlined" color="error" onClick={() => handleDelete('expense', exp.expenseID)}>
+                            <Button variant="outlined" color="error" onClick={() => confirmDelete('expense', exp.expenseID)}>
                               Delete
                             </Button>
                           </Stack>
@@ -494,7 +516,7 @@ const AdminPanel: React.FC<{ token: string }> = ({ token }) => {
                             <Button variant="outlined" onClick={() => handleOpenDialog('budget', bud)}>
                               Edit
                             </Button>
-                            <Button variant="outlined" color="error" onClick={() => handleDelete('budget', bud.budgetID)}>
+                            <Button variant="outlined" color="error" onClick={() => confirmDelete('budget', bud.budgetID)}>
                               Delete
                             </Button>
                           </Stack>
@@ -541,7 +563,7 @@ const AdminPanel: React.FC<{ token: string }> = ({ token }) => {
                             <Button variant="outlined" onClick={() => handleOpenDialog('user', user)}>
                               Edit
                             </Button>
-                            <Button variant="outlined" color="error" onClick={() => handleDelete('user', user.userID)}>
+                            <Button variant="outlined" color="error" onClick={() => confirmDelete('user', user.userID)}>
                               Delete
                             </Button>
                           </Stack>
@@ -571,14 +593,21 @@ const AdminPanel: React.FC<{ token: string }> = ({ token }) => {
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                 variant="outlined"
               />
+              {/* Replace User ID text field with a dropdown */}
               <TextField
-                label="User ID"
-                type="number"
+                select
+                label="User"
                 fullWidth
                 value={(formData as Expense).userID || ''}
                 onChange={(e) => setFormData({ ...formData, userID: parseInt(e.target.value) })}
                 variant="outlined"
-              />
+              >
+                {users.map(user => (
+                  <MenuItem key={user.userID} value={user.userID}>
+                    {user.userID} - {user.email}
+                  </MenuItem>
+                ))}
+              </TextField>
               <TextField
                 label="Amount"
                 type="number"
@@ -586,6 +615,8 @@ const AdminPanel: React.FC<{ token: string }> = ({ token }) => {
                 value={(formData as Expense | Budget).amount || ''}
                 onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) })}
                 variant="outlined"
+                error={(formData as Expense | Budget).amount! < 0}
+                helperText={(formData as Expense | Budget).amount! < 0 ? 'Amount cannot be negative' : ''}
               />
               <TextField
                 label="Date"
@@ -614,14 +645,21 @@ const AdminPanel: React.FC<{ token: string }> = ({ token }) => {
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                 variant="outlined"
               />
+              {/* Replace User ID text field with a dropdown */}
               <TextField
-                label="User ID"
-                type="number"
+                select
+                label="User"
                 fullWidth
                 value={(formData as Budget).userID || ''}
                 onChange={(e) => setFormData({ ...formData, userID: parseInt(e.target.value) })}
                 variant="outlined"
-              />
+              >
+                {users.map(user => (
+                  <MenuItem key={user.userID} value={user.userID}>
+                    {user.userID} - {user.email}
+                  </MenuItem>
+                ))}
+              </TextField>
               <TextField
                 label="Amount"
                 type="number"
@@ -629,6 +667,8 @@ const AdminPanel: React.FC<{ token: string }> = ({ token }) => {
                 value={(formData as Expense | Budget).amount || ''}
                 onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) })}
                 variant="outlined"
+                error={(formData as Expense | Budget).amount! < 0}
+                helperText={(formData as Expense | Budget).amount! < 0 ? 'Amount cannot be negative' : ''}
               />
               <TextField
                 label="Month/Year"
@@ -667,15 +707,49 @@ const AdminPanel: React.FC<{ token: string }> = ({ token }) => {
           <Button onClick={handleCloseDialog} color="secondary">
             Cancel
           </Button>
-          <Button onClick={handleSave} variant="contained" color="primary">
+          <Button onClick={handleSave} variant="contained" color="primary" disabled={(dialogType === 'expense' || dialogType === 'budget') && (formData as Expense | Budget).amount! < 0}>
             Save
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={openDeleteConfirm} onClose={() => setOpenDeleteConfirm(false)}>
+        <DialogTitle>Confirm Delete</DialogTitle>
+        <DialogContent>
+          <Typography>Are you sure you want to delete this record?</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenDeleteConfirm(false)} color="secondary">
+            Cancel
+          </Button>
+          <Button
+            onClick={() => {
+              if (deleteRecord) {
+                handleDelete(deleteRecord.type, deleteRecord.id);
+                setOpenDeleteConfirm(false);
+                setSnackbarMessage("Record deleted successfully");
+                setSnackbarOpen(true);
+              }
+            }}
+            variant="contained"
+            color="error"
+          >
+            Confirm
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Snackbar for deletion confirmation */}
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={3000}
+        onClose={() => setSnackbarOpen(false)}
+        message={snackbarMessage}
+      />
     </Box>
   );
 };
 
 export default AdminPanel;
-
 
