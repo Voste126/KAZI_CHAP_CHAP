@@ -16,7 +16,11 @@ import {
   FormControl,
   FormControlLabel,
   FormLabel,
+  IconButton,
+  InputAdornment,
 } from '@mui/material';
+import Visibility from '@mui/icons-material/Visibility';
+import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import API_URL from '../../utils/config';
@@ -58,6 +62,7 @@ const TabPanel: React.FC<TabPanelProps> = ({ children, value, index, ...other })
   );
 };
 
+/* --------------------- LOGIN FORM --------------------- */
 interface LoginFormProps {
   email: string;
   setEmail: (val: string) => void;
@@ -68,6 +73,11 @@ interface LoginFormProps {
 
 const LoginForm: React.FC<LoginFormProps> = React.memo(
   ({ email, setEmail, password, setPassword, handleSubmit }) => {
+    const [touched, setTouched] = useState({ email: false, password: false });
+    const [showPassword, setShowPassword] = useState(false);
+    const isValidEmail = (email: string): boolean =>
+      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
     return (
       <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 1 }}>
         <TextField
@@ -78,19 +88,34 @@ const LoginForm: React.FC<LoginFormProps> = React.memo(
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          onBlur={() => setTouched((prev) => ({ ...prev, email: true }))}
+          error={touched.email && !isValidEmail(email)}
+          helperText={touched.email && !isValidEmail(email) ? "Enter a valid email" : ""}
           variant="outlined"
           InputLabelProps={{ shrink: true }}
         />
         <TextField
           label="Password"
-          type="password"
+          type={showPassword ? 'text' : 'password'}
           fullWidth
           margin="normal"
           required
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          onBlur={() => setTouched((prev) => ({ ...prev, password: true }))}
+          error={touched.password && password.trim() === ""}
+          helperText={touched.password && password.trim() === "" ? "Password is required" : ""}
           variant="outlined"
           InputLabelProps={{ shrink: true }}
+          InputProps={{
+            endAdornment: (
+              <InputAdornment position="end">
+                <IconButton onClick={() => setShowPassword(!showPassword)} edge="end">
+                  {showPassword ? <VisibilityOff /> : <Visibility />}
+                </IconButton>
+              </InputAdornment>
+            ),
+          }}
         />
         <Button
           type="submit"
@@ -110,6 +135,7 @@ const LoginForm: React.FC<LoginFormProps> = React.memo(
   }
 );
 
+/* ------------------- REGISTER FORM ------------------- */
 interface RegisterFormProps {
   firstName: string;
   setFirstName: (val: string) => void;
@@ -142,6 +168,29 @@ const RegisterForm: React.FC<RegisterFormProps> = React.memo(
     setConfirmPassword,
     handleSubmit,
   }) => {
+    const [touched, setTouched] = useState({
+      firstName: false,
+      lastName: false,
+      email: false,
+      password: false,
+      confirmPassword: false,
+    });
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+    const isValidEmail = (email: string): boolean =>
+      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    const isStrongPassword = (pwd: string): boolean =>
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/.test(pwd);
+
+    const isFormValid =
+      firstName.trim() !== "" &&
+      lastName.trim() !== "" &&
+      gender.trim() !== "" &&
+      isValidEmail(email) &&
+      isStrongPassword(password) &&
+      password === confirmPassword;
+
     return (
       <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 1 }}>
         <TextField
@@ -152,6 +201,9 @@ const RegisterForm: React.FC<RegisterFormProps> = React.memo(
           required
           value={firstName}
           onChange={(e) => setFirstName(e.target.value)}
+          onBlur={() => setTouched((prev) => ({ ...prev, firstName: true }))}
+          error={touched.firstName && firstName.trim() === ""}
+          helperText={touched.firstName && firstName.trim() === "" ? "First name is required" : ""}
           variant="outlined"
           InputLabelProps={{ shrink: true }}
         />
@@ -163,6 +215,9 @@ const RegisterForm: React.FC<RegisterFormProps> = React.memo(
           required
           value={lastName}
           onChange={(e) => setLastName(e.target.value)}
+          onBlur={() => setTouched((prev) => ({ ...prev, lastName: true }))}
+          error={touched.lastName && lastName.trim() === ""}
+          helperText={touched.lastName && lastName.trim() === "" ? "Last name is required" : ""}
           variant="outlined"
           InputLabelProps={{ shrink: true }}
         />
@@ -186,41 +241,85 @@ const RegisterForm: React.FC<RegisterFormProps> = React.memo(
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          onBlur={() => setTouched((prev) => ({ ...prev, email: true }))}
+          error={touched.email && !isValidEmail(email)}
+          helperText={touched.email && !isValidEmail(email) ? "Enter a valid email" : ""}
           variant="outlined"
           InputLabelProps={{ shrink: true }}
         />
         <TextField
           label="Password"
-          type="password"
+          type={showPassword ? 'text' : 'password'}
           fullWidth
           margin="normal"
           required
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          onBlur={() => setTouched((prev) => ({ ...prev, password: true }))}
+          error={touched.password && !isStrongPassword(password)}
+          helperText={
+            touched.password
+              ? isStrongPassword(password)
+                ? "Strong password"
+                : "Weak password"
+              : "Password must be at least 8 characters long and include uppercase, lowercase, number, and special character."
+          }
           variant="outlined"
-          helperText="Password must be at least 8 characters long and include uppercase, lowercase, number, and special character."
           InputLabelProps={{ shrink: true }}
+          InputProps={{
+            endAdornment: (
+              <InputAdornment position="end">
+                <IconButton onClick={() => setShowPassword(!showPassword)} edge="end">
+                  {showPassword ? <VisibilityOff /> : <Visibility />}
+                </IconButton>
+              </InputAdornment>
+            ),
+          }}
+          sx={{
+            '& .MuiOutlinedInput-root': {
+              '& fieldset': {
+                borderColor: password
+                  ? isStrongPassword(password)
+                    ? 'green'
+                    : 'red'
+                  : undefined,
+              },
+            },
+          }}
         />
         <TextField
           label="Confirm Password"
-          type="password"
+          type={showConfirmPassword ? 'text' : 'password'}
           fullWidth
           margin="normal"
           required
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
+          onBlur={() => setTouched((prev) => ({ ...prev, confirmPassword: true }))}
+          error={touched.confirmPassword && confirmPassword !== password}
+          helperText={touched.confirmPassword && confirmPassword !== password ? "Passwords do not match" : ""}
           variant="outlined"
           InputLabelProps={{ shrink: true }}
+          InputProps={{
+            endAdornment: (
+              <InputAdornment position="end">
+                <IconButton onClick={() => setShowConfirmPassword(!showConfirmPassword)} edge="end">
+                  {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
+                </IconButton>
+              </InputAdornment>
+            ),
+          }}
         />
         <Button
           type="submit"
           variant="contained"
           fullWidth
+          disabled={!isFormValid}
           sx={{
             mt: 2,
-            backgroundColor: themeColors.primary,
+            backgroundColor: isFormValid ? themeColors.primary : 'grey',
             color: themeColors.background,
-            '&:hover': { backgroundColor: themeColors.secondary },
+            '&:hover': { backgroundColor: isFormValid ? themeColors.secondary : 'grey' },
           }}
         >
           Register
@@ -230,6 +329,7 @@ const RegisterForm: React.FC<RegisterFormProps> = React.memo(
   }
 );
 
+/* --------------------- AUTH FORM (PARENT) --------------------- */
 interface AuthFormProps {
   setToken: (token: string | null) => void;
 }
@@ -250,12 +350,6 @@ const AuthForm: React.FC<AuthFormProps> = ({ setToken }) => {
   const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
     setAlertMsg(null);
-  };
-
-  // Strong password: at least 8 characters, one uppercase, one lowercase, one number, one special character.
-  const isStrongPassword = (pwd: string): boolean => {
-    const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
-    return strongPasswordRegex.test(pwd);
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -286,24 +380,6 @@ const AuthForm: React.FC<AuthFormProps> = ({ setToken }) => {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setAlertMsg(null);
-
-    // Basic validation for required fields
-    if (!firstName || !lastName || !gender || !email || !password || !confirmPassword) {
-      setAlertSeverity('error');
-      setAlertMsg('All fields are required.');
-      return;
-    }
-    if (password !== confirmPassword) {
-      setAlertSeverity('error');
-      setAlertMsg('Passwords do not match.');
-      return;
-    }
-    if (!isStrongPassword(password)) {
-      setAlertSeverity('error');
-      setAlertMsg('Password must be at least 8 characters long and include uppercase, lowercase, number, and special character.');
-      return;
-    }
-
     try {
       await axios.post(`${API_URL}/api/auth/register`, { firstName, lastName, gender, email, password });
       setAlertSeverity('success');
@@ -391,6 +467,8 @@ const AuthForm: React.FC<AuthFormProps> = ({ setToken }) => {
 };
 
 export default AuthForm;
+
+
 
 
 

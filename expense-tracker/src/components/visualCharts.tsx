@@ -41,6 +41,7 @@ import {
   PolarRadiusAxis,
   ScatterChart,
   Scatter,
+  Legend // <-- Added Legend import here
 } from 'recharts';
 import API_URL from '../utils/config';
 
@@ -79,7 +80,7 @@ const VisualCharts: React.FC = () => {
   const navigate = useNavigate();
   const token = localStorage.getItem('jwtToken');
 
-  // Fetch expenses and budgets concurrently
+  // Fetch expenses and budgets concurrently and ensure arrays
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -87,8 +88,17 @@ const VisualCharts: React.FC = () => {
           axios.get(`${API_URL}/api/expenses`, { headers: { Authorization: `Bearer ${token}` } }),
           axios.get(`${API_URL}/api/budgets`, { headers: { Authorization: `Bearer ${token}` } }),
         ]);
-        setExpenses(expensesRes.data);
-        setBudgets(budgetsRes.data);
+
+        let expensesData = expensesRes.data;
+        if (!Array.isArray(expensesData)) {
+          expensesData = expensesData.$values ? expensesData.$values : [];
+        }
+        let budgetsData = budgetsRes.data;
+        if (!Array.isArray(budgetsData)) {
+          budgetsData = budgetsData.$values ? budgetsData.$values : [];
+        }
+        setExpenses(expensesData);
+        setBudgets(budgetsData);
         setLoading(false);
       } catch (err) {
         console.error('Error fetching data:', err);
@@ -148,11 +158,45 @@ const VisualCharts: React.FC = () => {
     return { category, budget: totalBudget, expense: totalExpense };
   });
 
-  // 5. Scatter Chart: Each Expense by Category (x: category, y: amount)
+  // 5. Scatter Chart: Each Expense by Category
   const scatterData = expenses.map((expense) => ({
     category: expense.category,
     amount: expense.amount,
   }));
+
+  // 6. Cumulative Expenses Over Time (New)
+  const sortedExpenses = [...expenses].sort(
+    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+  );
+  let cumulative = 0;
+  const cumulativeData = sortedExpenses.map((expense) => {
+    cumulative += expense.amount;
+    return { date: new Date(expense.date).toLocaleDateString(), cumulative };
+  });
+
+  // 7. Budget Utilization (New)
+  const totalExpense = expenses.reduce((sum, exp) => sum + exp.amount, 0);
+  const totalBudget = budgets.reduce((sum, bud) => sum + bud.amount, 0);
+  const budgetRemaining = totalBudget - totalExpense > 0 ? totalBudget - totalExpense : 0;
+  const utilizationData = [
+    { name: 'Used', value: totalExpense },
+    { name: 'Remaining', value: budgetRemaining },
+  ];
+
+  // 8. Stacked Bar Chart: Monthly Expenses by Category (New)
+  const monthlyCategoryData: { [month: string]: { [category: string]: number } } = {};
+  expenses.forEach((expense) => {
+    const month = new Date(expense.date).toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
+    if (!monthlyCategoryData[month]) {
+      monthlyCategoryData[month] = {};
+    }
+    monthlyCategoryData[month][expense.category] = (monthlyCategoryData[month][expense.category] || 0) + expense.amount;
+  });
+  const stackedBarData = Object.entries(monthlyCategoryData).map(([month, catData]) => ({
+    month,
+    ...catData,
+  }));
+  const allCategories = Array.from(new Set(expenses.map((e) => e.category)));
 
   // ----- End Chart Data Calculations -----
 
@@ -312,6 +356,71 @@ const VisualCharts: React.FC = () => {
                         <RechartsTooltip cursor={{ strokeDasharray: '3 3' }} />
                         <Scatter name="Expenses" data={scatterData} fill={themeColors.accent} />
                       </ScatterChart>
+                    </ResponsiveContainer>
+                  </Paper>
+                </Grid>
+
+                {/* New Chart 1: Cumulative Expenses Over Time */}
+                <Grid item xs={12} md={6}>
+                  <Paper sx={{ p: 3, boxShadow: 3, height: '350px' }}>
+                    <Typography variant="h6" gutterBottom>
+                      Cumulative Expenses Over Time
+                    </Typography>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={cumulativeData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="date" stroke={themeColors.text} />
+                        <YAxis stroke={themeColors.text} />
+                        <RechartsTooltip />
+                        <Line type="monotone" dataKey="cumulative" stroke={themeColors.primary} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </Paper>
+                </Grid>
+
+                {/* New Chart 2: Budget Utilization (Donut Chart) */}
+                <Grid item xs={12} md={6}>
+                  <Paper sx={{ p: 3, boxShadow: 3, height: '350px' }}>
+                    <Typography variant="h6" gutterBottom>
+                      Budget Utilization
+                    </Typography>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={utilizationData}
+                          dataKey="value"
+                          nameKey="name"
+                          innerRadius={60}
+                          outerRadius={100}
+                          label
+                        >
+                          {utilizationData.map((_, index) => (
+                            <Cell key={`cell-util-${index}`} fill={pieColors[index % pieColors.length]} />
+                          ))}
+                        </Pie>
+                        <RechartsTooltip />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </Paper>
+                </Grid>
+
+                {/* New Chart 3: Stacked Bar Chart: Monthly Expenses by Category */}
+                <Grid item xs={12}>
+                  <Paper sx={{ p: 3, boxShadow: 3, height: '400px' }}>
+                    <Typography variant="h6" gutterBottom>
+                      Monthly Expenses by Category
+                    </Typography>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={stackedBarData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="month" stroke={themeColors.text} />
+                        <YAxis stroke={themeColors.text} />
+                        <RechartsTooltip />
+                        <Legend />
+                        {allCategories.map((cat, index) => (
+                          <Bar key={cat} dataKey={cat} stackId="a" fill={pieColors[index % pieColors.length]} />
+                        ))}
+                      </BarChart>
                     </ResponsiveContainer>
                   </Paper>
                 </Grid>
