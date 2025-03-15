@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace KaziChapChap.Data.Migrations
 {
     [DbContext(typeof(KaziDbContext))]
-    [Migration("20250314125511_AddBudgetExpenseRelationship")]
-    partial class AddBudgetExpenseRelationship
+    [Migration("20250315204615_AdminDetails")]
+    partial class AdminDetails
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -132,6 +132,15 @@ namespace KaziChapChap.Data.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Email")
+                        .HasColumnType("text");
+
+                    b.Property<string>("FirstName")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Gender")
+                        .HasColumnType("text");
+
+                    b.Property<string>("LastName")
                         .HasColumnType("text");
 
                     b.Property<string>("PasswordHash")

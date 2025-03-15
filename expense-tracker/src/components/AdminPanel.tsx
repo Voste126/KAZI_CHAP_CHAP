@@ -26,6 +26,11 @@ import {
   Stack,
   MenuItem,
   Snackbar,
+  Radio,
+  RadioGroup,
+  FormControl,
+  FormControlLabel,
+  FormLabel,
 } from '@mui/material';
 import {
   ResponsiveContainer,
@@ -34,22 +39,13 @@ import {
   Cell,
   Tooltip as RechartsTooltip,
   BarChart,
-  Bar,
+  CartesianGrid,
   XAxis,
   YAxis,
-  CartesianGrid,
   Legend,
+  Bar,
   LineChart,
   Line,
-  RadarChart,
-  Radar,
-  PolarGrid,
-  PolarAngleAxis,
-  PolarRadiusAxis,
-  AreaChart,
-  Area,
-  ComposedChart,
-  Treemap,
 } from 'recharts';
 import API_URL from '../utils/config';
 
@@ -80,11 +76,15 @@ interface Budget {
   monthYear: string; // e.g., "2024-03-01T00:00:00Z"
 }
 
+// Updated User model with additional fields.
 interface User {
   userID: number;
   email: string;
   passwordHash: string;
   createdAt: string;
+  firstName: string;
+  lastName: string;
+  gender: string;
   password?: string;
 }
 
@@ -96,6 +96,10 @@ const AdminPanel: React.FC<{ token: string }> = ({ token }) => {
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [error, setError] = useState<string | null>(null);
+
+  // Filter states for users
+  const [searchName, setSearchName] = useState('');
+  const [filterGender, setFilterGender] = useState('');
 
   // Dialog state for add/edit
   const [openDialog, setOpenDialog] = useState<boolean>(false);
@@ -135,6 +139,7 @@ const AdminPanel: React.FC<{ token: string }> = ({ token }) => {
       if (usersData && usersData.$values) {
         usersData = usersData.$values;
       }
+      // Remove the password field if present
       const processedUsers = usersData.map((user: User) => {
         if (user.password) {
           delete user.password;
@@ -151,7 +156,7 @@ const AdminPanel: React.FC<{ token: string }> = ({ token }) => {
     fetchData();
   }, [fetchData]);
 
-  // Date change handlers
+  // Date change handlers for budgets/expenses
   const handleDateChange = (date: Date | null) => {
     if (!date) return;
     const utcDate = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
@@ -261,18 +266,26 @@ const AdminPanel: React.FC<{ token: string }> = ({ token }) => {
   const pieData = Object.entries(expenseByCategory).map(([category, value]) => ({ name: category, value }));
   const pieColors = [themeColors.primary, themeColors.secondary, themeColors.accent, themeColors.text];
 
-  const monthlyExpensesData = Object.entries(
-    expenses.reduce((acc: { [month: string]: number }, curr) => {
-      const options: Intl.DateTimeFormatOptions = { month: 'short', year: 'numeric' };
-      const monthYear = new Date(curr.date).toLocaleDateString(undefined, options);
-      acc[monthYear] = (acc[monthYear] || 0) + curr.amount;
-      return acc;
-    }, {})
-  ).map(([month, total]) => ({ month, total }));
+  // Additional analytics calculations
+  const totalExpense = expenses.reduce((acc, exp) => acc + exp.amount, 0);
+  const totalBudget = budgets.reduce((acc, bud) => acc + bud.amount, 0);
+  const averageExpense = expenses.length ? totalExpense / expenses.length : 0;
 
-  const radarData = Object.entries(expenseByCategory).map(([category, amount]) => ({ category, amount }));
-  const treemapData = Object.entries(expenseByCategory).map(([name, value]) => ({ name, value }));
+  const monthlyExpensesMap: { [month: string]: number } = {};
+  expenses.forEach(exp => {
+    const month = new Date(exp.date).toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
+    monthlyExpensesMap[month] = (monthlyExpensesMap[month] || 0) + exp.amount;
+  });
+  const monthlyExpensesData = Object.entries(monthlyExpensesMap).map(([month, total]) => ({ month, total }));
   // ===================================================================
+
+  // Filter the users based on search text and selected gender
+  const filteredUsers = users.filter(user => {
+    const nameMatch = `${user.firstName} ${user.lastName}`.toLowerCase().includes(searchName.toLowerCase())
+      || user.email.toLowerCase().includes(searchName.toLowerCase());
+    const genderMatch = filterGender ? user.gender === filterGender : true;
+    return nameMatch && genderMatch;
+  });
 
   return (
     <Box sx={{ height: '100vh', width: '100vw', display: 'flex', flexDirection: 'column', backgroundColor: themeColors.background }}>
@@ -321,6 +334,23 @@ const AdminPanel: React.FC<{ token: string }> = ({ token }) => {
               Analytics Dashboard
             </Typography>
 
+            {/* Summary Metrics */}
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 4 }}>
+              <Paper sx={{ p: 2, flex: 1, textAlign: 'center' }}>
+                <Typography variant="subtitle1">Total Expenses</Typography>
+                <Typography variant="h5">${totalExpense.toFixed(2)}</Typography>
+              </Paper>
+              <Paper sx={{ p: 2, flex: 1, textAlign: 'center' }}>
+                <Typography variant="subtitle1">Total Budgets</Typography>
+                <Typography variant="h5">${totalBudget.toFixed(2)}</Typography>
+              </Paper>
+              <Paper sx={{ p: 2, flex: 1, textAlign: 'center' }}>
+                <Typography variant="subtitle1">Average Expense</Typography>
+                <Typography variant="h5">${averageExpense.toFixed(2)}</Typography>
+              </Paper>
+            </Stack>
+
+            {/* Expense Breakdown by Category (Pie Chart) */}
             <Paper sx={{ p: 3, mb: 4 }}>
               <Typography variant="h6" gutterBottom sx={{ color: themeColors.primary }}>
                 Expense Breakdown by Category (Pie Chart)
@@ -337,9 +367,10 @@ const AdminPanel: React.FC<{ token: string }> = ({ token }) => {
               </ResponsiveContainer>
             </Paper>
 
+            {/* Monthly Expenses (Bar Chart) */}
             <Paper sx={{ p: 3, mb: 4 }}>
               <Typography variant="h6" gutterBottom sx={{ color: themeColors.primary }}>
-                Expenses Per Month (Bar Chart)
+                Monthly Expenses (Bar Chart)
               </Typography>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={monthlyExpensesData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
@@ -348,14 +379,15 @@ const AdminPanel: React.FC<{ token: string }> = ({ token }) => {
                   <YAxis />
                   <RechartsTooltip />
                   <Legend />
-                  <Bar dataKey="total" fill={themeColors.primary} name="Total Expenses" />
+                  <Bar dataKey="total" fill={themeColors.secondary} name="Expenses" />
                 </BarChart>
               </ResponsiveContainer>
             </Paper>
 
+            {/* Expense Trend (Line Chart) */}
             <Paper sx={{ p: 3, mb: 4 }}>
               <Typography variant="h6" gutterBottom sx={{ color: themeColors.primary }}>
-                Expense Trend Over Time (Line Chart)
+                Expense Trend (Line Chart)
               </Typography>
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={monthlyExpensesData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
@@ -364,71 +396,8 @@ const AdminPanel: React.FC<{ token: string }> = ({ token }) => {
                   <YAxis />
                   <RechartsTooltip />
                   <Legend />
-                  <Line type="monotone" dataKey="total" stroke={themeColors.secondary} strokeWidth={2} name="Expenses" />
+                  <Line type="monotone" dataKey="total" stroke={themeColors.accent} strokeWidth={2} name="Expenses Trend" />
                 </LineChart>
-              </ResponsiveContainer>
-            </Paper>
-
-            <Paper sx={{ p: 3, mb: 4 }}>
-              <Typography variant="h6" gutterBottom sx={{ color: themeColors.primary }}>
-                Expense Distribution (Radar Chart)
-              </Typography>
-              <ResponsiveContainer width="100%" height={300}>
-                <RadarChart data={radarData}>
-                  <PolarGrid />
-                  <PolarAngleAxis dataKey="category" />
-                  <PolarRadiusAxis />
-                  <Radar name="Expenses" dataKey="amount" stroke={themeColors.accent} fill={themeColors.accent} fillOpacity={0.6} />
-                  <Legend />
-                  <RechartsTooltip />
-                </RadarChart>
-              </ResponsiveContainer>
-            </Paper>
-
-            <Paper sx={{ p: 3, mb: 4 }}>
-              <Typography variant="h6" gutterBottom sx={{ color: themeColors.primary }}>
-                Cumulative Expenses (Area Chart)
-              </Typography>
-              <ResponsiveContainer width="100%" height={300}>
-                <AreaChart data={monthlyExpensesData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                  <defs>
-                    <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor={themeColors.primary} stopOpacity={0.8} />
-                      <stop offset="95%" stopColor={themeColors.primary} stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
-                  <YAxis />
-                  <RechartsTooltip />
-                  <Area type="monotone" dataKey="total" stroke={themeColors.primary} fillOpacity={1} fill="url(#colorTotal)" />
-                </AreaChart>
-              </ResponsiveContainer>
-            </Paper>
-
-            <Paper sx={{ p: 3, mb: 4 }}>
-              <Typography variant="h6" gutterBottom sx={{ color: themeColors.primary }}>
-                Combined Chart (Bar & Line)
-              </Typography>
-              <ResponsiveContainer width="100%" height={300}>
-                <ComposedChart data={monthlyExpensesData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
-                  <YAxis />
-                  <RechartsTooltip />
-                  <Legend />
-                  <Bar dataKey="total" barSize={20} fill={themeColors.secondary} />
-                  <Line type="monotone" dataKey="total" stroke={themeColors.accent} strokeWidth={2} />
-                </ComposedChart>
-              </ResponsiveContainer>
-            </Paper>
-
-            <Paper sx={{ p: 3, mb: 4 }}>
-              <Typography variant="h6" gutterBottom sx={{ color: themeColors.primary }}>
-                Expense Distribution (Treemap)
-              </Typography>
-              <ResponsiveContainer width="100%" height={300}>
-                <Treemap data={treemapData} dataKey="value" stroke="#fff" fill={themeColors.primary} />
               </ResponsiveContainer>
             </Paper>
           </Box>
@@ -536,6 +505,28 @@ const AdminPanel: React.FC<{ token: string }> = ({ token }) => {
             <Typography variant="h4" gutterBottom sx={{ color: themeColors.primary }}>
               Manage Users
             </Typography>
+            {/* Filter controls */}
+            <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
+              <TextField
+                label="Search by Name"
+                variant="outlined"
+                value={searchName}
+                onChange={(e) => setSearchName(e.target.value)}
+              />
+              <TextField
+                select
+                label="Filter by Gender"
+                variant="outlined"
+                value={filterGender}
+                onChange={(e) => setFilterGender(e.target.value)}
+                sx={{ minWidth: 150 }}
+              >
+                <MenuItem value="">All</MenuItem>
+                <MenuItem value="Male">Male</MenuItem>
+                <MenuItem value="Female">Female</MenuItem>
+                <MenuItem value="Other">Other</MenuItem>
+              </TextField>
+            </Stack>
             <Button variant="contained" sx={{ mb: 2, backgroundColor: themeColors.primary }} onClick={() => handleOpenDialog('user')}>
               Add User
             </Button>
@@ -546,16 +537,22 @@ const AdminPanel: React.FC<{ token: string }> = ({ token }) => {
                     <TableRow>
                       <TableCell sx={{ fontWeight: 'bold', color: themeColors.primary }}>ID</TableCell>
                       <TableCell sx={{ fontWeight: 'bold', color: themeColors.primary }}>Email</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', color: themeColors.primary }}>First Name</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', color: themeColors.primary }}>Last Name</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', color: themeColors.primary }}>Gender</TableCell>
                       <TableCell sx={{ fontWeight: 'bold', color: themeColors.primary }}>Password Hash</TableCell>
                       <TableCell sx={{ fontWeight: 'bold', color: themeColors.primary }}>Created At</TableCell>
                       <TableCell sx={{ fontWeight: 'bold', color: themeColors.primary }}>Actions</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {users.map(user => (
+                    {filteredUsers.map(user => (
                       <TableRow key={user.userID}>
                         <TableCell>{user.userID}</TableCell>
                         <TableCell>{user.email}</TableCell>
+                        <TableCell>{user.firstName}</TableCell>
+                        <TableCell>{user.lastName}</TableCell>
+                        <TableCell>{user.gender}</TableCell>
                         <TableCell>{user.passwordHash}</TableCell>
                         <TableCell>{new Date(user.createdAt).toLocaleString()}</TableCell>
                         <TableCell>
@@ -593,7 +590,7 @@ const AdminPanel: React.FC<{ token: string }> = ({ token }) => {
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                 variant="outlined"
               />
-              {/* Replace User ID text field with a dropdown */}
+              {/* Dropdown for selecting user */}
               <TextField
                 select
                 label="User"
@@ -645,7 +642,7 @@ const AdminPanel: React.FC<{ token: string }> = ({ token }) => {
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                 variant="outlined"
               />
-              {/* Replace User ID text field with a dropdown */}
+              {/* Dropdown for selecting user */}
               <TextField
                 select
                 label="User"
@@ -683,6 +680,32 @@ const AdminPanel: React.FC<{ token: string }> = ({ token }) => {
           )}
           {dialogType === 'user' && (
             <Stack spacing={2} sx={{ mt: 1 }}>
+              <TextField
+                label="First Name"
+                fullWidth
+                value={(formData as User).firstName || ''}
+                onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                variant="outlined"
+              />
+              <TextField
+                label="Last Name"
+                fullWidth
+                value={(formData as User).lastName || ''}
+                onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                variant="outlined"
+              />
+              <FormControl component="fieldset">
+                <FormLabel component="legend">Gender</FormLabel>
+                <RadioGroup
+                  row
+                  value={(formData as User).gender || ''}
+                  onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+                >
+                  <FormControlLabel value="Male" control={<Radio />} label="Male" />
+                  <FormControlLabel value="Female" control={<Radio />} label="Female" />
+                  <FormControlLabel value="Other" control={<Radio />} label="Other" />
+                </RadioGroup>
+              </FormControl>
               <TextField
                 label="Email"
                 fullWidth

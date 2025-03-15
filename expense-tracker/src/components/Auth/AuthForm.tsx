@@ -11,6 +11,11 @@ import {
   Alert,
   Divider,
   CssBaseline,
+  Radio,
+  RadioGroup,
+  FormControl,
+  FormControlLabel,
+  FormLabel,
 } from '@mui/material';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
@@ -37,10 +42,6 @@ interface TabPanelProps {
   children?: React.ReactNode;
   value: number;
   index: number;
-}
-
-interface AuthFormProps {
-  setToken: (token: string | null) => void;
 }
 
 const TabPanel: React.FC<TabPanelProps> = ({ children, value, index, ...other }) => {
@@ -110,6 +111,12 @@ const LoginForm: React.FC<LoginFormProps> = React.memo(
 );
 
 interface RegisterFormProps {
+  firstName: string;
+  setFirstName: (val: string) => void;
+  lastName: string;
+  setLastName: (val: string) => void;
+  gender: string;
+  setGender: (val: string) => void;
   email: string;
   setEmail: (val: string) => void;
   password: string;
@@ -120,9 +127,57 @@ interface RegisterFormProps {
 }
 
 const RegisterForm: React.FC<RegisterFormProps> = React.memo(
-  ({ email, setEmail, password, setPassword, confirmPassword, setConfirmPassword, handleSubmit }) => {
+  ({
+    firstName,
+    setFirstName,
+    lastName,
+    setLastName,
+    gender,
+    setGender,
+    email,
+    setEmail,
+    password,
+    setPassword,
+    confirmPassword,
+    setConfirmPassword,
+    handleSubmit,
+  }) => {
     return (
       <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 1 }}>
+        <TextField
+          label="First Name"
+          type="text"
+          fullWidth
+          margin="normal"
+          required
+          value={firstName}
+          onChange={(e) => setFirstName(e.target.value)}
+          variant="outlined"
+          InputLabelProps={{ shrink: true }}
+        />
+        <TextField
+          label="Last Name"
+          type="text"
+          fullWidth
+          margin="normal"
+          required
+          value={lastName}
+          onChange={(e) => setLastName(e.target.value)}
+          variant="outlined"
+          InputLabelProps={{ shrink: true }}
+        />
+        <FormControl component="fieldset" sx={{ mt: 2 }}>
+          <FormLabel component="legend">Gender</FormLabel>
+          <RadioGroup
+            row
+            value={gender}
+            onChange={(e) => setGender(e.target.value)}
+          >
+            <FormControlLabel value="Male" control={<Radio />} label="Male" />
+            <FormControlLabel value="Female" control={<Radio />} label="Female" />
+            <FormControlLabel value="Other" control={<Radio />} label="Other" />
+          </RadioGroup>
+        </FormControl>
         <TextField
           label="Email"
           type="email"
@@ -143,6 +198,7 @@ const RegisterForm: React.FC<RegisterFormProps> = React.memo(
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           variant="outlined"
+          helperText="Password must be at least 8 characters long and include uppercase, lowercase, number, and special character."
           InputLabelProps={{ shrink: true }}
         />
         <TextField
@@ -174,10 +230,17 @@ const RegisterForm: React.FC<RegisterFormProps> = React.memo(
   }
 );
 
+interface AuthFormProps {
+  setToken: (token: string | null) => void;
+}
+
 const AuthForm: React.FC<AuthFormProps> = ({ setToken }) => {
   const navigate = useNavigate();
   // activeTab: 0 for Login, 1 for Register
   const [activeTab, setActiveTab] = useState(0);
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [gender, setGender] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -187,6 +250,12 @@ const AuthForm: React.FC<AuthFormProps> = ({ setToken }) => {
   const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
     setAlertMsg(null);
+  };
+
+  // Strong password: at least 8 characters, one uppercase, one lowercase, one number, one special character.
+  const isStrongPassword = (pwd: string): boolean => {
+    const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
+    return strongPasswordRegex.test(pwd);
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -201,7 +270,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ setToken }) => {
       setAlertMsg('Login successful!');
       const newToken = response.data.token;
       localStorage.setItem('jwtToken', newToken);
-      setToken(newToken); // Update the token in App state
+      setToken(newToken);
       console.log('Logged in as:', response.data.user, 'Token:', newToken);
       navigate('/'); // Redirect to the main page
     } catch (err: unknown) {
@@ -217,16 +286,32 @@ const AuthForm: React.FC<AuthFormProps> = ({ setToken }) => {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setAlertMsg(null);
+
+    // Basic validation for required fields
+    if (!firstName || !lastName || !gender || !email || !password || !confirmPassword) {
+      setAlertSeverity('error');
+      setAlertMsg('All fields are required.');
+      return;
+    }
     if (password !== confirmPassword) {
       setAlertSeverity('error');
       setAlertMsg('Passwords do not match.');
       return;
     }
+    if (!isStrongPassword(password)) {
+      setAlertSeverity('error');
+      setAlertMsg('Password must be at least 8 characters long and include uppercase, lowercase, number, and special character.');
+      return;
+    }
+
     try {
-      await axios.post(`${API_URL}/api/auth/register`, { email, password });
+      await axios.post(`${API_URL}/api/auth/register`, { firstName, lastName, gender, email, password });
       setAlertSeverity('success');
       setAlertMsg('Registration successful! Please login.');
       // Clear fields and switch to Login tab
+      setFirstName('');
+      setLastName('');
+      setGender('');
       setEmail('');
       setPassword('');
       setConfirmPassword('');
@@ -284,6 +369,12 @@ const AuthForm: React.FC<AuthFormProps> = ({ setToken }) => {
           </TabPanel>
           <TabPanel value={activeTab} index={1}>
             <RegisterForm
+              firstName={firstName}
+              setFirstName={setFirstName}
+              lastName={lastName}
+              setLastName={setLastName}
+              gender={gender}
+              setGender={setGender}
               email={email}
               setEmail={setEmail}
               password={password}
@@ -300,6 +391,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ setToken }) => {
 };
 
 export default AuthForm;
+
 
 
 

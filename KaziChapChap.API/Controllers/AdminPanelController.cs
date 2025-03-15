@@ -242,32 +242,41 @@ namespace KaziChapChap.API.Controllers
         {
             public string? Email { get; set; }
             public string? Password { get; set; }
+            public string? FirstName { get; set; }
+            public string? LastName { get; set; }
+            public string? Gender { get; set; }
         }
 
         [HttpPost("users")]
         public async Task<ActionResult<User>> CreateUser(CreateUserDto dto)
         {
-            var user = new User
-            {
-                Email = dto.Email,
-                CreatedAt = System.DateTime.UtcNow
-            };
-
             if (string.IsNullOrEmpty(dto.Password))
             {
                 return BadRequest("Password cannot be null or empty.");
             }
+
+            var user = new User
+            {
+                Email = dto.Email,
+                FirstName = dto.FirstName,
+                LastName = dto.LastName,
+                Gender = dto.Gender,
+                CreatedAt = System.DateTime.UtcNow
+            };
 
             user = await _authService.Register(user, dto.Password);
 
             return CreatedAtAction(nameof(GetUser), new { id = user.UserID }, user);
         }
 
+        // DTO for updating a user.
         public class UpdateUserDto
         {
             public int UserID { get; set; }
             public string? Email { get; set; }
-            public string? Password { get; set; }
+            public string? FirstName { get; set; }
+            public string? LastName { get; set; }
+            public string? Gender { get; set; }
         }
 
         [HttpPut("users/{id}")]
@@ -284,38 +293,26 @@ namespace KaziChapChap.API.Controllers
                 return NotFound();
             }
 
+            // Update user details.
             user.Email = dto.Email;
+            user.FirstName = dto.FirstName;
+            user.LastName = dto.LastName;
+            user.Gender = dto.Gender;
 
-            if (!string.IsNullOrWhiteSpace(dto.Password))
+            _context.Entry(user).State = EntityState.Modified;
+            try
             {
-                if (string.IsNullOrEmpty(user.Email))
-                {
-                    return BadRequest("User email cannot be null or empty.");
-                }
-
-                bool resetResult = await _authService.ResetPassword(user.Email, dto.Password);
-                if (!resetResult)
-                {
-                    return BadRequest("Failed to reset password.");
-                }
+                await _context.SaveChangesAsync();
             }
-            else
+            catch (DbUpdateConcurrencyException)
             {
-                _context.Entry(user).State = EntityState.Modified;
-                try
+                if (!_context.Users.Any(u => u.UserID == id))
                 {
-                    await _context.SaveChangesAsync();
+                    return NotFound();
                 }
-                catch (DbUpdateConcurrencyException)
+                else
                 {
-                    if (!_context.Users.Any(u => u.UserID == id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
+                    throw;
                 }
             }
 
@@ -336,6 +333,7 @@ namespace KaziChapChap.API.Controllers
             return NoContent();
         }
         #endregion
+
     }
 }
 

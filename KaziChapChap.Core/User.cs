@@ -9,6 +9,12 @@ namespace KaziChapChap.Core.Models
         public int UserID { get; set; }
         public string? Email { get; set; }
         public string? PasswordHash { get; set; }
+        
+        // New fields for registration
+        public string? FirstName { get; set; }
+        public string? LastName { get; set; }
+        public string? Gender { get; set; }
+
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         
         // Navigation properties
@@ -17,3 +23,4 @@ namespace KaziChapChap.Core.Models
         public ICollection<Notification> Notifications { get; set; } = new List<Notification>();
     }
 }
+

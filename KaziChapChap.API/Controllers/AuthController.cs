@@ -27,8 +27,16 @@ namespace KaziChapChap.API.Controllers
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegistrationDto registrationDto)
         {
+            // Create a new User instance and map the additional fields
+            var user = new User 
+            { 
+                Email = registrationDto.Email,
+                FirstName = registrationDto.FirstName,
+                LastName = registrationDto.LastName,
+                Gender = registrationDto.Gender
+            };
+
             // The AuthService handles password hashing using SHA256.
-            var user = new User { Email = registrationDto.Email };
             var registeredUser = await _authService.Register(user, registrationDto.Password);
             if (registeredUser == null)
             {
@@ -36,6 +44,7 @@ namespace KaziChapChap.API.Controllers
             }
             return Ok(registeredUser);
         }
+
 
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginDto loginDto)
