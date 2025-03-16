@@ -1,7 +1,7 @@
 // src/App.tsx
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { jwtDecode } from 'jwt-decode';// make sure this package is installed
+import {jwtDecode} from 'jwt-decode'; // ensure "jwt-decode" is installed: npm install jwt-decode
 import AuthForm from './components/Auth/AuthForm';
 import NotFound from './pages/NotFound';
 import Dashboard from './components/BudgetManager';
@@ -13,12 +13,13 @@ import About from './pages/About';
 import Logout from './components/Auth/Logout';
 import AdminPanel from './components/AdminPanel';
 import DataExport from './pages/DataExport';
+import ProfilePage from './pages/ProfilePage'; // <-- Import ProfilePage
 
 interface JwtPayload {
   exp: number;
   email: string;
   role: string;
-  userID: number; // assuming the token now includes userID
+  userID: number; // adjust if your token has different claims
 }
 
 const App: React.FC = () => {
@@ -46,27 +47,37 @@ const App: React.FC = () => {
         <Route path="/" element={<Home />} />
         <Route path="/visual" element={<VisualCharts />} />
 
-        {/* Protected Routes */}
+        {/* Protected Routes (only accessible if token is set) */}
         {token ? (
           <>
             <Route path="/expenses" element={<ExpensesList token={token} />} />
             <Route path="/expense/new" element={<ExpenseForm token={token} />} />
             <Route path="/expense/edit/:id" element={<ExpenseForm token={token} />} />
+
+            {/* Profile Page for any logged-in user */}
+            <Route path="/profile" element={<ProfilePage />} />
+
+            {/* Admin-Only Routes */}
             {isAdmin && (
               <>
                 <Route path="/admin" element={<AdminPanel token={token} />} />
                 <Route path="/data-export" element={<DataExport />} />
               </>
             )}
+
             <Route path="/logout" element={<Logout setToken={setToken} />} />
-            {/* Fallback: if admin, redirect to /admin; otherwise to /expenses */}
+
+            {/* If a logged-in user visits an unknown path:
+                - If admin, redirect to /admin
+                - Else, redirect to /expenses */}
             <Route path="*" element={<Navigate to={isAdmin ? "/admin" : "/expenses"} replace />} />
           </>
         ) : (
+          // If no token, any unknown path redirects to login
           <Route path="*" element={<Navigate to="/login" replace />} />
         )}
-        
-        {/* Fallback Route */}
+
+        {/* 404 Fallback Route if not matched above (optional) */}
         <Route path="*" element={<NotFound />} />
       </Routes>
     </Router>

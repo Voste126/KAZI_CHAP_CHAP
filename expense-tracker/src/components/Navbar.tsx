@@ -13,7 +13,7 @@ import {
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import { useNavigate } from 'react-router-dom';
-import {jwtDecode} from 'jwt-decode';
+import {jwtDecode} from 'jwt-decode'; // ensure "jwt-decode" is installed
 
 interface JwtPayload {
   role: string;
@@ -45,13 +45,16 @@ const Navbar: React.FC = () => {
     }
   }
 
-  // Define menu items; conditionally add the Admin Panel and Data Export if user is an admin.
+  // Conditionally build the menu items array
   const menuItems = [
     { label: 'Home', path: '/' },
     { label: 'About Us', path: '/about' },
     { label: 'Budget', path: '/budget' },
     { label: 'Expenses', path: '/expenses' },
     { label: 'Visuals', path: '/visual' },
+    // Show "Profile" only if logged in
+    ...(token ? [{ label: 'Profile', path: '/profile' }] : []),
+    // Show admin items only if user is an admin
     ...(isAdmin ? [{ label: 'Admin Panel', path: '/admin' }] : []),
     ...(isAdmin ? [{ label: 'Data Export', path: '/data-export' }] : []),
   ];
@@ -123,7 +126,11 @@ const Navbar: React.FC = () => {
         ) : (
           <Box sx={{ display: 'flex', gap: 2 }}>
             {menuItems.map((item) => (
-              <Button key={item.label} color="inherit" onClick={() => navigate(item.path)}>
+              <Button
+                key={item.label}
+                color="inherit"
+                onClick={() => navigate(item.path)}
+              >
                 {item.label}
               </Button>
             ))}
@@ -144,6 +151,7 @@ const Navbar: React.FC = () => {
 };
 
 export default Navbar;
+
 
 
 

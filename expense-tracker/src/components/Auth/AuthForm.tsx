@@ -1,11 +1,9 @@
-// src/components/Auth/AuthForm.tsx
 import React, { useState } from 'react';
 import {
-  Container,
+  Box,
   Paper,
   Tabs,
   Tab,
-  Box,
   TextField,
   Button,
   Alert,
@@ -21,6 +19,8 @@ import {
 } from '@mui/material';
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import CancelIcon from '@mui/icons-material/Cancel';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import API_URL from '../../utils/config';
@@ -29,7 +29,7 @@ import API_URL from '../../utils/config';
 const themeColors = {
   primary: '#006400',   // Dark Green
   secondary: '#8B4513', // Saddle Brown
-  background: '#F5F5DC',// Beige
+  background: '#006400',// Background Green
   text: '#2F4F4F',      // Dark Slate Gray
   accent: '#FFD700',    // Gold
 };
@@ -75,8 +75,9 @@ const LoginForm: React.FC<LoginFormProps> = React.memo(
   ({ email, setEmail, password, setPassword, handleSubmit }) => {
     const [touched, setTouched] = useState({ email: false, password: false });
     const [showPassword, setShowPassword] = useState(false);
-    const isValidEmail = (email: string): boolean =>
-      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+    const isValidEmail = (em: string): boolean =>
+      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em);
 
     return (
       <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 1 }}>
@@ -124,7 +125,7 @@ const LoginForm: React.FC<LoginFormProps> = React.memo(
           sx={{
             mt: 2,
             backgroundColor: themeColors.primary,
-            color: themeColors.background,
+            color: '#fff', // Text color changed to white
             '&:hover': { backgroundColor: themeColors.secondary },
           }}
         >
@@ -178,10 +179,38 @@ const RegisterForm: React.FC<RegisterFormProps> = React.memo(
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-    const isValidEmail = (email: string): boolean =>
-      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    // Show or hide the password requirements
+    const [showPasswordRequirements, setShowPasswordRequirements] = useState(false);
+
+    const isValidEmail = (em: string): boolean =>
+      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em);
+
     const isStrongPassword = (pwd: string): boolean =>
       /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/.test(pwd);
+
+    // Requirements for a strong password
+    const passwordRequirements = [
+      {
+        label: "At least 8 characters",
+        test: (pwd: string) => pwd.length >= 8,
+      },
+      {
+        label: "At least one lowercase letter",
+        test: (pwd: string) => /[a-z]/.test(pwd),
+      },
+      {
+        label: "At least one uppercase letter",
+        test: (pwd: string) => /[A-Z]/.test(pwd),
+      },
+      {
+        label: "At least one number",
+        test: (pwd: string) => /\d/.test(pwd),
+      },
+      {
+        label: "At least one special character",
+        test: (pwd: string) => /[\W_]/.test(pwd),
+      },
+    ];
 
     const isFormValid =
       firstName.trim() !== "" &&
@@ -190,6 +219,9 @@ const RegisterForm: React.FC<RegisterFormProps> = React.memo(
       isValidEmail(email) &&
       isStrongPassword(password) &&
       password === confirmPassword;
+
+    // Show the requirements if focused or if the password is non-empty
+    const showRequirements = showPasswordRequirements || password.length > 0;
 
     return (
       <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 1 }}>
@@ -221,6 +253,7 @@ const RegisterForm: React.FC<RegisterFormProps> = React.memo(
           variant="outlined"
           InputLabelProps={{ shrink: true }}
         />
+
         <FormControl component="fieldset" sx={{ mt: 2 }}>
           <FormLabel component="legend">Gender</FormLabel>
           <RadioGroup
@@ -233,6 +266,7 @@ const RegisterForm: React.FC<RegisterFormProps> = React.memo(
             <FormControlLabel value="Other" control={<Radio />} label="Other" />
           </RadioGroup>
         </FormControl>
+
         <TextField
           label="Email"
           type="email"
@@ -247,6 +281,7 @@ const RegisterForm: React.FC<RegisterFormProps> = React.memo(
           variant="outlined"
           InputLabelProps={{ shrink: true }}
         />
+
         <TextField
           label="Password"
           type={showPassword ? 'text' : 'password'}
@@ -255,7 +290,8 @@ const RegisterForm: React.FC<RegisterFormProps> = React.memo(
           required
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          onBlur={() => setTouched((prev) => ({ ...prev, password: true }))}
+          onFocus={() => setShowPasswordRequirements(true)}
+          onBlur={() => setShowPasswordRequirements(false)}
           error={touched.password && !isStrongPassword(password)}
           helperText={
             touched.password
@@ -287,6 +323,35 @@ const RegisterForm: React.FC<RegisterFormProps> = React.memo(
             },
           }}
         />
+
+        {/* Password Requirements List */}
+        {showRequirements && (
+          <Box sx={{ mt: 1, mb: 2 }}>
+            {passwordRequirements.map((req, idx) => {
+              const satisfied = req.test(password);
+              return (
+                <Box
+                  key={idx}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    color: satisfied ? 'green' : 'red',
+                    fontSize: '0.9rem',
+                    mb: 0.5,
+                  }}
+                >
+                  {satisfied ? (
+                    <CheckCircleIcon fontSize="small" sx={{ mr: 1 }} />
+                  ) : (
+                    <CancelIcon fontSize="small" sx={{ mr: 1 }} />
+                  )}
+                  <span>{req.label}</span>
+                </Box>
+              );
+            })}
+          </Box>
+        )}
+
         <TextField
           label="Confirm Password"
           type={showConfirmPassword ? 'text' : 'password'}
@@ -310,6 +375,7 @@ const RegisterForm: React.FC<RegisterFormProps> = React.memo(
             ),
           }}
         />
+
         <Button
           type="submit"
           variant="contained"
@@ -318,8 +384,10 @@ const RegisterForm: React.FC<RegisterFormProps> = React.memo(
           sx={{
             mt: 2,
             backgroundColor: isFormValid ? themeColors.primary : 'grey',
-            color: themeColors.background,
-            '&:hover': { backgroundColor: isFormValid ? themeColors.secondary : 'grey' },
+            color: '#fff', // Text color changed to white
+            '&:hover': {
+              backgroundColor: isFormValid ? themeColors.secondary : 'grey',
+            },
           }}
         >
           Register
@@ -365,7 +433,6 @@ const AuthForm: React.FC<AuthFormProps> = ({ setToken }) => {
       const newToken = response.data.token;
       localStorage.setItem('jwtToken', newToken);
       setToken(newToken);
-      console.log('Logged in as:', response.data.user, 'Token:', newToken);
       navigate('/'); // Redirect to the main page
     } catch (err: unknown) {
       setAlertSeverity('error');
@@ -405,17 +472,19 @@ const AuthForm: React.FC<AuthFormProps> = ({ setToken }) => {
   return (
     <>
       <CssBaseline />
-      <Container
-        maxWidth="sm"
+      {/* Full viewport background */}
+      <Box
         sx={{
+          width: '100vw',
+          height: '100vh',
+          backgroundColor: themeColors.background,
           display: 'flex',
-          alignItems: 'center',
           justifyContent: 'center',
-          minHeight: '100vh',
-          background: `linear-gradient(135deg, ${themeColors.primary} 0%, ${themeColors.accent} 100%)`,
+          alignItems: 'center',
         }}
       >
-        <Paper sx={{ width: '100%', borderRadius: 2, boxShadow: 6, overflow: 'hidden' }}>
+        {/* The Paper is now wider to make forms larger */}
+        <Paper sx={{ width: 500, borderRadius: 2, boxShadow: 6, overflow: 'hidden' }}>
           <Tabs
             value={activeTab}
             onChange={handleTabChange}
@@ -428,12 +497,15 @@ const AuthForm: React.FC<AuthFormProps> = ({ setToken }) => {
             <Tab label="Login" />
             <Tab label="Register" />
           </Tabs>
+
           {alertMsg && (
             <Alert severity={alertSeverity} sx={{ mx: 2, mt: 2 }}>
               {alertMsg}
             </Alert>
           )}
+
           <Divider />
+
           <TabPanel value={activeTab} index={0}>
             <LoginForm
               email={email}
@@ -443,6 +515,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ setToken }) => {
               handleSubmit={handleLogin}
             />
           </TabPanel>
+
           <TabPanel value={activeTab} index={1}>
             <RegisterForm
               firstName={firstName}
@@ -461,15 +534,10 @@ const AuthForm: React.FC<AuthFormProps> = ({ setToken }) => {
             />
           </TabPanel>
         </Paper>
-      </Container>
+      </Box>
     </>
   );
 };
 
 export default AuthForm;
-
-
-
-
-
 

@@ -1,4 +1,3 @@
-// src/components/visualCharts.tsx
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import {
@@ -41,7 +40,7 @@ import {
   PolarRadiusAxis,
   ScatterChart,
   Scatter,
-  Legend // <-- Added Legend import here
+  Legend
 } from 'recharts';
 import API_URL from '../utils/config';
 
@@ -108,6 +107,27 @@ const VisualCharts: React.FC = () => {
     };
     fetchData();
   }, [token]);
+
+  // Function to handle CSV download using your endpoint (JWT is used to determine the UserID)
+  const handleDownloadCSV = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/api/csv/download`, {
+        headers: { Authorization: `Bearer ${token}` },
+        responseType: 'blob',
+      });
+      
+      // Create a blob URL and simulate a click to download the CSV file
+      const url = window.URL.createObjectURL(new Blob([response.data], { type: 'text/csv' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'UserCsvController.csv');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error('Error downloading CSV file:', error);
+    }
+  };
 
   // ----- Chart Data Calculations -----
 
@@ -214,7 +234,6 @@ const VisualCharts: React.FC = () => {
   return (
     <>
       <CssBaseline />
-      {/* Full-screen layout */}
       <Box
         sx={{
           minHeight: '100vh',
@@ -244,6 +263,21 @@ const VisualCharts: React.FC = () => {
 
         {/* Main Content */}
         <Container maxWidth="lg" sx={{ flex: 1, mt: 4, mb: 4 }}>
+          {/* Download CSV Button using theme colors */}
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+            <Button
+              variant="contained"
+              sx={{
+                backgroundColor: themeColors.primary,
+                color: themeColors.background,
+                '&:hover': { backgroundColor: themeColors.secondary },
+              }}
+              onClick={handleDownloadCSV}
+            >
+              Download CSV
+            </Button>
+          </Box>
+
           {loading ? (
             <Typography align="center">Loading data...</Typography>
           ) : error ? (
@@ -481,4 +515,3 @@ const VisualCharts: React.FC = () => {
 };
 
 export default VisualCharts;
-
