@@ -13,18 +13,18 @@ import {
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import { useNavigate } from 'react-router-dom';
-import {jwtDecode} from 'jwt-decode'; // ensure "jwt-decode" is installed
+import {jwtDecode} from 'jwt-decode';
 
 interface JwtPayload {
   role: string;
 }
 
 const themeColors = {
-  primary: '#006400',   // Dark Green
-  secondary: '#8B4513', // Saddle Brown
-  background: '#F5F5DC',// Beige
-  text: '#2F4F4F',      // Dark Slate Gray
-  accent: '#FFD700',    // Gold
+  primary: '#006400',
+  secondary: '#8B4513',
+  background: '#F5F5DC',
+  text: '#2F4F4F',
+  accent: '#FFD700',
 };
 
 const Navbar: React.FC = () => {
@@ -32,7 +32,6 @@ const Navbar: React.FC = () => {
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const isMobile = useMediaQuery('(max-width:600px)');
 
-  // Retrieve token from localStorage
   const token = localStorage.getItem('jwtToken');
   let isAdmin = false;
   if (token) {
@@ -45,7 +44,7 @@ const Navbar: React.FC = () => {
     }
   }
 
-  // Conditionally build the menu items array
+  // Build the menu items array
   const menuItems = [
     { label: 'Home', path: '/' },
     { label: 'About Us', path: '/about' },
@@ -54,6 +53,8 @@ const Navbar: React.FC = () => {
     { label: 'Visuals', path: '/visual' },
     // Show "Profile" only if logged in
     ...(token ? [{ label: 'Profile', path: '/profile' }] : []),
+    // Show "Notifications" only if logged in
+    ...(token ? [{ label: 'Notifications', path: '/notifications' }] : []),
     // Show admin items only if user is an admin
     ...(isAdmin ? [{ label: 'Admin Panel', path: '/admin' }] : []),
     ...(isAdmin ? [{ label: 'Data Export', path: '/data-export' }] : []),
@@ -151,8 +152,3 @@ const Navbar: React.FC = () => {
 };
 
 export default Navbar;
-
-
-
-
-

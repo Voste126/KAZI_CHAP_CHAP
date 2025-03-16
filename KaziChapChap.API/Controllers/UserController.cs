@@ -24,6 +24,7 @@ namespace KaziChapChap.API.Controllers
             _context = context;
         }
 
+        
         /// <summary>
         /// Gets the current user's profile based on the JWT.
         /// </summary>
@@ -58,23 +59,25 @@ namespace KaziChapChap.API.Controllers
         /// <summary>
         /// Updates the current user's profile based on the JWT.
         /// </summary>
+        // PUT: api/User/profile
         [HttpPut("profile")]
         public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileDto dto)
         {
-            // Extract user id from the JWT token
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userIdClaim))
+            // Identify the logged-in user
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int userId))
+            {
                 return Unauthorized("User ID not found in token.");
+            }
 
-            if (!int.TryParse(userIdClaim, out int userId))
-                return BadRequest("Invalid user ID in token.");
-
-            // Retrieve the user
+            // Retrieve user
             var user = await _context.Users.FirstOrDefaultAsync(u => u.UserID == userId);
             if (user == null)
+            {
                 return NotFound("User not found.");
+            }
 
-            // Update the fields from the DTO
+            // Update fields
             user.FirstName = dto.FirstName;
             user.LastName = dto.LastName;
             user.Gender = dto.Gender;
@@ -83,7 +86,16 @@ namespace KaziChapChap.API.Controllers
             // Save changes
             await _context.SaveChangesAsync();
 
-            // Return the updated user data
+            // AFTER saving, create a notification
+            var notification = new Notification
+            {
+                UserID = userId,
+                Message = "You have updated your profile successfully.",
+            };
+            _context.Notifications.Add(notification);
+            await _context.SaveChangesAsync();
+
+            // Return updated data
             return Ok(new
             {
                 user.UserID,

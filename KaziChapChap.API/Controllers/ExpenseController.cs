@@ -7,12 +7,10 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Linq;
+using System;
 
 namespace KaziChapChap.API.Controllers
 {
-    /// <summary>
-    /// Handles CRUD operations for expenses.
-    /// </summary>
     [Route("api/[controller]")]
     [ApiController]
     [Authorize] // Only authenticated users can access these endpoints
@@ -29,19 +27,70 @@ namespace KaziChapChap.API.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Expense>>> GetExpenses()
         {
-            // Retrieve the authenticated user's ID.
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int authenticatedUserId))
+            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int userId))
             {
                 return Unauthorized();
             }
 
-            // Filter expenses by the authenticated user's ID.
             var expenses = await _context.Expenses
-                .Where(e => e.UserID == authenticatedUserId)
+                .Where(e => e.UserID == userId)
                 .ToListAsync();
 
             return Ok(expenses);
+        }
+
+        // POST: api/Expenses
+        [HttpPost]
+        public async Task<ActionResult<Expense>> PostExpense(Expense expense)
+        {
+            // 1. Identify the user from JWT
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int userId))
+            {
+                return Unauthorized();
+            }
+
+            // 2. Associate the expense with the logged-in user
+            expense.UserID = userId;
+
+            // 3. Retrieve the budget
+            var budget = await _context.Budgets.FindAsync(expense.BudgetID);
+            if (budget == null || budget.UserID != userId)
+            {
+                return BadRequest("Invalid budget specified.");
+            }
+
+            // 4. Calculate current total expenses for this budget
+            var totalExpenses = _context.Expenses
+                .Where(e => e.BudgetID == expense.BudgetID)
+                .Sum(e => e.Amount);
+
+            // 5. Check overspending
+            var newTotal = totalExpenses + expense.Amount;
+            if (newTotal > budget.Amount)
+            {
+                // Create a notification for overspending attempt
+                var overspendNotification = new Notification
+                {
+                    UserID = userId,
+                    Message = $"Overspending blocked! Budget {budget.BudgetID} has {budget.Amount}, total would be {newTotal}.",
+                    CreatedAt = DateTime.UtcNow
+                };
+                _context.Notifications.Add(overspendNotification);
+
+                // Save the notification
+                await _context.SaveChangesAsync();
+
+                // Return 400 to block the expense creation
+                return BadRequest("Overspending attempt blocked. A notification was created.");
+            }
+
+            // 6. Otherwise, add and save the expense
+            _context.Expenses.Add(expense);
+            await _context.SaveChangesAsync();
+
+            return CreatedAtAction(nameof(GetExpense), new { id = expense.ExpenseID }, expense);
         }
 
         // GET: api/Expenses/5
@@ -49,66 +98,21 @@ namespace KaziChapChap.API.Controllers
         public async Task<ActionResult<Expense>> GetExpense(int id)
         {
             var expense = await _context.Expenses.FindAsync(id);
-            if (expense == null)
-            {
-                return NotFound();
-            }
+            if (expense == null) return NotFound();
 
-            // Retrieve the authenticated user's ID.
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int authenticatedUserId))
+            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int userId))
             {
                 return Unauthorized();
             }
-            
-            // Ensure that the expense belongs to the authenticated user.
-            if (expense.UserID != authenticatedUserId)
+
+            if (expense.UserID != userId)
             {
-                return Unauthorized("You are not authorized to access this expense.");
+                return Forbid("Not your expense.");
             }
 
             return Ok(expense);
         }
-
-        // POST: api/Expenses
-        [HttpPost]
-        public async Task<ActionResult<Expense>> PostExpense(Expense expense)
-        {
-            // Retrieve the authenticated user's ID from JWT claims
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int authenticatedUserId))
-            {
-                return Unauthorized();
-            }
-
-            // Ensure the expense is associated with the authenticated user
-            expense.UserID = authenticatedUserId;
-
-            // Retrieve the budget for the expense
-            var budget = await _context.Budgets.FindAsync(expense.BudgetID);
-            if (budget == null || budget.UserID != authenticatedUserId)
-            {
-                return BadRequest("Invalid budget specified.");
-            }
-
-            // Calculate current total expenses for the budget
-            var totalExpenses = _context.Expenses
-                .Where(e => e.BudgetID == expense.BudgetID)
-                .Sum(e => e.Amount);
-
-            // Check if adding this expense exceeds the budget
-            if (totalExpenses + expense.Amount > budget.Amount)
-            {
-                return BadRequest("Adding this expense would exceed your budget.");
-            }
-
-            // Add and save the expense
-            _context.Expenses.Add(expense);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction(nameof(GetExpense), new { id = expense.ExpenseID }, expense);
-        }
-
 
         // PUT: api/Expenses/5
         [HttpPut("{id}")]
@@ -116,30 +120,24 @@ namespace KaziChapChap.API.Controllers
         {
             if (id != expense.ExpenseID)
             {
-                return BadRequest();
+                return BadRequest("Expense ID mismatch.");
             }
 
             var existingExpense = await _context.Expenses.FindAsync(id);
-            if (existingExpense == null)
-            {
-                return NotFound();
-            }
+            if (existingExpense == null) return NotFound();
 
-            // Retrieve the authenticated user's ID.
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int authenticatedUserId))
+            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int userId))
             {
                 return Unauthorized();
             }
 
-            // Ensure that the expense belongs to the authenticated user.
-            if (existingExpense.UserID != authenticatedUserId)
+            if (existingExpense.UserID != userId)
             {
-                return Unauthorized("You are not authorized to update this expense.");
+                return Forbid("Not your expense to update.");
             }
 
-            // Update the tracked entity’s values with those from the incoming object.
-            // You can also selectively update properties if needed.
+            // Update fields
             _context.Entry(existingExpense).CurrentValues.SetValues(expense);
 
             try
@@ -152,10 +150,7 @@ namespace KaziChapChap.API.Controllers
                 {
                     return NotFound();
                 }
-                else
-                {
-                    throw;
-                }
+                throw;
             }
 
             return NoContent();
@@ -166,22 +161,17 @@ namespace KaziChapChap.API.Controllers
         public async Task<IActionResult> DeleteExpense(int id)
         {
             var expense = await _context.Expenses.FindAsync(id);
-            if (expense == null)
-            {
-                return NotFound();
-            }
+            if (expense == null) return NotFound();
 
-            // Retrieve the authenticated user's ID.
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int authenticatedUserId))
+            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int userId))
             {
                 return Unauthorized();
             }
 
-            // Ensure the expense belongs to the authenticated user.
-            if (expense.UserID != authenticatedUserId)
+            if (expense.UserID != userId)
             {
-                return Unauthorized("You are not authorized to delete this expense.");
+                return Forbid("Not your expense to delete.");
             }
 
             _context.Expenses.Remove(expense);

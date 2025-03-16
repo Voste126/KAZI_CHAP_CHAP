@@ -1,7 +1,7 @@
 // src/App.tsx
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import {jwtDecode} from 'jwt-decode'; // ensure "jwt-decode" is installed: npm install jwt-decode
+import {jwtDecode} from 'jwt-decode'; // ensure "jwt-decode" is installed
 import AuthForm from './components/Auth/AuthForm';
 import NotFound from './pages/NotFound';
 import Dashboard from './components/BudgetManager';
@@ -13,7 +13,8 @@ import About from './pages/About';
 import Logout from './components/Auth/Logout';
 import AdminPanel from './components/AdminPanel';
 import DataExport from './pages/DataExport';
-import ProfilePage from './pages/ProfilePage'; // <-- Import ProfilePage
+import ProfilePage from './pages/ProfilePage';
+import NotificationsList from './pages/NotificationsList'; // <-- Import NotificationsList
 
 interface JwtPayload {
   exp: number;
@@ -57,6 +58,9 @@ const App: React.FC = () => {
             {/* Profile Page for any logged-in user */}
             <Route path="/profile" element={<ProfilePage />} />
 
+            {/* Notifications Page for any logged-in user */}
+            <Route path="/notifications" element={<NotificationsList />} />
+
             {/* Admin-Only Routes */}
             {isAdmin && (
               <>
@@ -85,5 +89,4 @@ const App: React.FC = () => {
 };
 
 export default App;
-
 
