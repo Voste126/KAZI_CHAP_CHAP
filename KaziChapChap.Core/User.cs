@@ -14,8 +14,11 @@ namespace KaziChapChap.Core.Models
         public string? FirstName { get; set; }
         public string? LastName { get; set; }
         public string? Gender { get; set; }
-
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        
+        // New fields for password reset
+        public string? ResetToken { get; set; }
+        public DateTime? ResetTokenExpiry { get; set; }
         
         // Navigation properties
         public ICollection<Expense> Expenses { get; set; } = new List<Expense>();

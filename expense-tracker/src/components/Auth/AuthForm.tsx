@@ -125,7 +125,7 @@ const LoginForm: React.FC<LoginFormProps> = React.memo(
           sx={{
             mt: 2,
             backgroundColor: themeColors.primary,
-            color: '#fff', // Text color changed to white
+            color: '#fff',
             '&:hover': { backgroundColor: themeColors.secondary },
           }}
         >
@@ -178,8 +178,6 @@ const RegisterForm: React.FC<RegisterFormProps> = React.memo(
     });
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
-    // Show or hide the password requirements
     const [showPasswordRequirements, setShowPasswordRequirements] = useState(false);
 
     const isValidEmail = (em: string): boolean =>
@@ -188,7 +186,6 @@ const RegisterForm: React.FC<RegisterFormProps> = React.memo(
     const isStrongPassword = (pwd: string): boolean =>
       /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/.test(pwd);
 
-    // Requirements for a strong password
     const passwordRequirements = [
       {
         label: "At least 8 characters",
@@ -220,7 +217,6 @@ const RegisterForm: React.FC<RegisterFormProps> = React.memo(
       isStrongPassword(password) &&
       password === confirmPassword;
 
-    // Show the requirements if focused or if the password is non-empty
     const showRequirements = showPasswordRequirements || password.length > 0;
 
     return (
@@ -324,7 +320,6 @@ const RegisterForm: React.FC<RegisterFormProps> = React.memo(
           }}
         />
 
-        {/* Password Requirements List */}
         {showRequirements && (
           <Box sx={{ mt: 1, mb: 2 }}>
             {passwordRequirements.map((req, idx) => {
@@ -384,7 +379,7 @@ const RegisterForm: React.FC<RegisterFormProps> = React.memo(
           sx={{
             mt: 2,
             backgroundColor: isFormValid ? themeColors.primary : 'grey',
-            color: '#fff', // Text color changed to white
+            color: '#fff',
             '&:hover': {
               backgroundColor: isFormValid ? themeColors.secondary : 'grey',
             },
@@ -396,6 +391,211 @@ const RegisterForm: React.FC<RegisterFormProps> = React.memo(
     );
   }
 );
+/* ------------------ FORGOT PASSWORD FORM ------------------ */
+const ForgotPasswordForm: React.FC = () => {
+  const [email, setEmail] = useState('');
+  const [resetToken, setResetToken] = useState(''); // token used in the reset request
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [alertMsg, setAlertMsg] = useState<string | null>(null);
+  const [alertSeverity, setAlertSeverity] = useState<'error' | 'success'>('success');
+  const [tokenSent, setTokenSent] = useState(false);
+  const [sentToken, setSentToken] = useState(''); // token returned from API for display
+
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false);
+
+  const isValidEmail = (em: string): boolean =>
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em);
+
+  const isStrongPassword = (pwd: string): boolean =>
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/.test(pwd);
+
+  // Function to send the reset token to the user's email (demo: token is returned)
+  const handleSendResetToken = async () => {
+    try {
+      const response = await axios.post(`${API_URL}/api/auth/forgotpassword`, { email });
+      const { resetToken: token, message } = response.data;
+      console.log("Received token:", token); // Debug log
+      // Update both the sentToken (for display) and the resetToken (used in the reset request)
+      setSentToken(token);
+      setResetToken(token);
+      setTokenSent(true);
+      setAlertMsg(`${message} Token: ${token}`);
+      setAlertSeverity("success");
+    } catch (error) {
+      console.error(error);
+      setAlertMsg("Error sending reset token.");
+      setAlertSeverity("error");
+    }
+  };
+
+  // Function to send the reset password request
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAlertMsg(null);
+
+    if (!isValidEmail(email)) {
+      setAlertMsg("Enter a valid email.");
+      setAlertSeverity("error");
+      return;
+    }
+    if (!isStrongPassword(newPassword)) {
+      setAlertMsg("Password does not meet strength requirements.");
+      setAlertSeverity("error");
+      return;
+    }
+    if (newPassword !== confirmNewPassword) {
+      setAlertMsg("Passwords do not match.");
+      setAlertSeverity("error");
+      return;
+    }
+
+    try {
+      const response = await axios.post(`${API_URL}/api/auth/resetpassword`, {
+        email,
+        resetToken,
+        newPassword
+      });
+      setAlertMsg(response.data.Message || "Password reset successfully.");
+      setAlertSeverity("success");
+      // Clear fields after successful reset
+      setEmail('');
+      setResetToken('');
+      setNewPassword('');
+      setConfirmNewPassword('');
+      setTokenSent(false);
+      setSentToken('');
+    } catch (error) {
+      console.error(error);
+      setAlertMsg("Error resetting password.");
+      setAlertSeverity("error");
+    }
+  };
+
+  return (
+    <Box component="form" onSubmit={handleResetPassword} noValidate sx={{ mt: 1 }}>
+      {alertMsg && (
+        <Alert severity={alertSeverity} sx={{ mx: 2, mt: 2 }}>
+          {alertMsg}
+        </Alert>
+      )}
+      <TextField
+        label="Email"
+        type="email"
+        fullWidth
+        margin="normal"
+        required
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        variant="outlined"
+        InputLabelProps={{ shrink: true }}
+      />
+      <Button
+        variant="contained"
+        fullWidth
+        onClick={handleSendResetToken}
+        sx={{
+          mt: 2,
+          backgroundColor: themeColors.primary,
+          color: '#fff',
+          '&:hover': { backgroundColor: themeColors.secondary },
+        }}
+      >
+        Send Reset Token
+      </Button>
+
+      <TextField
+        label="Reset Token"
+        type="text"
+        fullWidth
+        margin="normal"
+        required
+        value={resetToken}
+        onChange={(e) => setResetToken(e.target.value)}
+        variant="outlined"
+        InputLabelProps={{ shrink: true }}
+        helperText={tokenSent ? `Token sent: ${sentToken}` : ""}
+      />
+
+      <TextField
+        label="New Password"
+        type={showNewPassword ? 'text' : 'password'}
+        fullWidth
+        margin="normal"
+        required
+        value={newPassword}
+        onChange={(e) => setNewPassword(e.target.value)}
+        variant="outlined"
+        InputLabelProps={{ shrink: true }}
+        error={!!newPassword && !isStrongPassword(newPassword)}
+        helperText={
+          newPassword 
+            ? (isStrongPassword(newPassword) ? "Strong password" : "Weak password")
+            : "Password must be at least 8 characters long and include uppercase, lowercase, number, and special character."
+        }
+        InputProps={{
+          endAdornment: (
+            <InputAdornment position="end">
+              <IconButton onClick={() => setShowNewPassword(!showNewPassword)} edge="end">
+                {showNewPassword ? <VisibilityOff /> : <Visibility />}
+              </IconButton>
+            </InputAdornment>
+          )
+        }}
+        sx={{
+          '& .MuiOutlinedInput-root': {
+            '& fieldset': {
+              borderColor: newPassword
+                ? isStrongPassword(newPassword)
+                  ? 'green'
+                  : 'red'
+                : undefined,
+            },
+          },
+        }}
+      />
+
+      <TextField
+        label="Confirm New Password"
+        type={showConfirmNewPassword ? 'text' : 'password'}
+        fullWidth
+        margin="normal"
+        required
+        value={confirmNewPassword}
+        onChange={(e) => setConfirmNewPassword(e.target.value)}
+        variant="outlined"
+        InputLabelProps={{ shrink: true }}
+        error={!!confirmNewPassword && confirmNewPassword !== newPassword}
+        helperText={confirmNewPassword && confirmNewPassword !== newPassword ? "Passwords do not match" : ""}
+        InputProps={{
+          endAdornment: (
+            <InputAdornment position="end">
+              <IconButton onClick={() => setShowConfirmNewPassword(!showConfirmNewPassword)} edge="end">
+                {showConfirmNewPassword ? <VisibilityOff /> : <Visibility />}
+              </IconButton>
+            </InputAdornment>
+          )
+        }}
+      />
+
+      <Button
+        type="submit"
+        variant="contained"
+        fullWidth
+        sx={{
+          mt: 2,
+          backgroundColor: themeColors.primary,
+          color: '#fff',
+          '&:hover': { backgroundColor: themeColors.secondary },
+        }}
+      >
+        Reset Password
+      </Button>
+    </Box>
+  );
+};
+
 
 /* --------------------- AUTH FORM (PARENT) --------------------- */
 interface AuthFormProps {
@@ -404,7 +604,7 @@ interface AuthFormProps {
 
 const AuthForm: React.FC<AuthFormProps> = ({ setToken }) => {
   const navigate = useNavigate();
-  // activeTab: 0 for Login, 1 for Register
+  // activeTab: 0 for Login, 1 for Register, 2 for Forgot Password
   const [activeTab, setActiveTab] = useState(0);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -472,7 +672,6 @@ const AuthForm: React.FC<AuthFormProps> = ({ setToken }) => {
   return (
     <>
       <CssBaseline />
-      {/* Full viewport background */}
       <Box
         sx={{
           width: '100vw',
@@ -483,7 +682,6 @@ const AuthForm: React.FC<AuthFormProps> = ({ setToken }) => {
           alignItems: 'center',
         }}
       >
-        {/* The Paper is now wider to make forms larger */}
         <Paper sx={{ width: 500, borderRadius: 2, boxShadow: 6, overflow: 'hidden' }}>
           <Tabs
             value={activeTab}
@@ -496,6 +694,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ setToken }) => {
           >
             <Tab label="Login" />
             <Tab label="Register" />
+            <Tab label="Forgot Password" />
           </Tabs>
 
           {alertMsg && (
@@ -533,6 +732,10 @@ const AuthForm: React.FC<AuthFormProps> = ({ setToken }) => {
               handleSubmit={handleRegister}
             />
           </TabPanel>
+
+          <TabPanel value={activeTab} index={2}>
+            <ForgotPasswordForm />
+          </TabPanel>
         </Paper>
       </Box>
     </>
@@ -540,4 +743,3 @@ const AuthForm: React.FC<AuthFormProps> = ({ setToken }) => {
 };
 
 export default AuthForm;
-

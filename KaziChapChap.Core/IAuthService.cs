@@ -9,6 +9,11 @@ namespace KaziChapChap.Core.Services
         Task<User> Register(User user, string password);
         Task<User> Login(string email, string password);
         Task<bool> UserExists(string email);
-        Task<bool> ResetPassword(string email, string newPassword);
+        
+        // New methods for password reset flow
+        Task<User> GetUserByEmail(string email);
+        Task UpdateUser(User user);
+        string HashPassword(string password);
     }
 }
+

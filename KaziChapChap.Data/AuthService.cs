@@ -42,19 +42,21 @@ namespace KaziChapChap.Data
             return await _context.Users.AnyAsync(u => u.Email == email);
         }
 
-        public async Task<bool> ResetPassword(string email, string newPassword)
+        // New method: Retrieves a user by email.
+        public async Task<User> GetUserByEmail(string email)
         {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
-            if (user == null)
-            {
-                return false;
-            }
-            user.PasswordHash = HashPassword(newPassword);
-            await _context.SaveChangesAsync();
-            return true;
+            return await _context.Users.FirstOrDefaultAsync(u => u.Email == email) ?? throw new InvalidOperationException("User not found.");
         }
 
-        private static string HashPassword(string password)
+        // New method: Updates the user record in the database.
+        public async Task UpdateUser(User user)
+        {
+            _context.Users.Update(user);
+            await _context.SaveChangesAsync();
+        }
+
+        // Instance method to hash a password.
+        public string HashPassword(string password)
         {
             using (var sha256 = SHA256.Create())
             {
@@ -63,11 +65,13 @@ namespace KaziChapChap.Data
             }
         }
 
-        private static bool VerifyPassword(string hashedPassword, string password)
+        // Private helper method to verify the provided password against the stored hash.
+        private bool VerifyPassword(string hashedPassword, string password)
         {
             var hashOfInput = HashPassword(password);
             return string.Equals(hashedPassword, hashOfInput, StringComparison.OrdinalIgnoreCase);
         }
     }
 }
+
 

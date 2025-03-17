@@ -8,6 +8,7 @@ using System.Text;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
 using Microsoft.Extensions.Configuration;
+using System.Text.RegularExpressions;
 
 namespace KaziChapChap.API.Controllers
 {
@@ -27,7 +28,6 @@ namespace KaziChapChap.API.Controllers
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegistrationDto registrationDto)
         {
-            // Create a new User instance and map the additional fields
             var user = new User 
             { 
                 Email = registrationDto.Email,
@@ -36,7 +36,6 @@ namespace KaziChapChap.API.Controllers
                 Gender = registrationDto.Gender
             };
 
-            // The AuthService handles password hashing using SHA256.
             var registeredUser = await _authService.Register(user, registrationDto.Password);
             if (registeredUser == null)
             {
@@ -44,7 +43,6 @@ namespace KaziChapChap.API.Controllers
             }
             return Ok(registeredUser);
         }
-
 
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginDto loginDto)
@@ -62,8 +60,64 @@ namespace KaziChapChap.API.Controllers
         [HttpPost("logout")]
         public IActionResult Logout()
         {
-            // For JWT-based authentication, logout is typically handled on the client side.
             return Ok(new LogoutResponseDto { Message = "Logged out successfully." });
+        }
+
+        // NEW: Forgot Password endpoint with numeric token generation
+        [HttpPost("forgotpassword")]
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto dto)
+        {
+            var user = await _authService.GetUserByEmail(dto.Email);
+            if (user == null)
+            {
+                // Always return the same message for security reasons
+                return Ok(new { message = "If a user with that email exists, a reset token has been generated." });
+            }
+
+            // Generate a 6-digit numeric token as a string.
+            var random = new Random();
+            var tokenNumeric = random.Next(100000, 999999).ToString();
+
+            // Store the token and its expiry (15 minutes from now)
+            user.ResetToken = tokenNumeric;
+            user.ResetTokenExpiry = DateTime.UtcNow.AddMinutes(15);
+            await _authService.UpdateUser(user);
+
+            // Return the token (for demo purposes, token is returned in response)
+            return Ok(new ForgotPasswordResponseDto 
+            { 
+                ResetToken = tokenNumeric, 
+                Message = "Reset token generated. (For demo, token is returned in response)" 
+            });
+        }
+
+        // NEW: Reset Password endpoint
+        [HttpPost("resetpassword")]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto dto)
+        {
+            var user = await _authService.GetUserByEmail(dto.Email);
+            if (user == null)
+            {
+                return BadRequest("Invalid request.");
+            }
+
+            if (user.ResetToken != dto.ResetToken || user.ResetTokenExpiry < DateTime.UtcNow)
+            {
+                return BadRequest("Invalid or expired reset token.");
+            }
+
+            if (!IsStrongPassword(dto.NewPassword))
+            {
+                return BadRequest("Password does not meet strength requirements.");
+            }
+
+            // Update the user's password and clear the reset token
+            user.PasswordHash = _authService.HashPassword(dto.NewPassword);
+            user.ResetToken = null;
+            user.ResetTokenExpiry = null;
+            await _authService.UpdateUser(user);
+
+            return Ok(new { Message = "Password has been reset successfully." });
         }
 
         private string GenerateJwtToken(User user)
@@ -79,9 +133,7 @@ namespace KaziChapChap.API.Controllers
             {
                 throw new InvalidOperationException("JWT Secret key must be at least 256 bits (32 bytes) long.");
             }
-            // Determine role: if the email is the admin email then assign role "Admin", otherwise "User".
             var role = string.Equals(user.Email, "Admin@gmail.com", StringComparison.OrdinalIgnoreCase) ? "Admin" : "User";
-
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(new Claim[]
@@ -93,18 +145,42 @@ namespace KaziChapChap.API.Controllers
                 Expires = DateTime.UtcNow.AddHours(1),
                 Issuer = _configuration["Jwt:Issuer"],
                 Audience = _configuration["Jwt:Audience"],
-                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key),
-                                        SecurityAlgorithms.HmacSha256Signature)
+                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
             };
             var token = tokenHandler.CreateToken(tokenDescriptor);
             return tokenHandler.WriteToken(token);
         }
+
+        private bool IsStrongPassword(string pwd)
+        {
+            return Regex.IsMatch(pwd, @"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$");
+        }
+    }
+
+    // DTOs for the endpoints
+    public class ForgotPasswordDto
+    {
+        public string Email { get; set; } = string.Empty;
+    }
+
+    public class ForgotPasswordResponseDto
+    {
+        public string ResetToken { get; set; } = string.Empty;
+        public string Message { get; set; } = string.Empty;
+    }
+
+    public class ResetPasswordDto
+    {
+        public string Email { get; set; } = string.Empty;
+        public string ResetToken { get; set; } = string.Empty;
+        public string NewPassword { get; set; } = string.Empty;
     }
 
     public class LogoutResponseDto
     {
-        public required string Message { get; set; }
+        public string Message { get; set; } = string.Empty;
     }
 }
+
 
 
