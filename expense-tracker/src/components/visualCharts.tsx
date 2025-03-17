@@ -11,13 +11,13 @@ import {
   Grid,
   Alert,
   Button,
-  Stack,
   TableContainer,
   Table,
   TableHead,
   TableRow,
   TableCell,
   TableBody,
+  Snackbar,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -27,10 +27,11 @@ import {
   Cell,
   Tooltip as RechartsTooltip,
   BarChart,
-  Bar,
   CartesianGrid,
   XAxis,
   YAxis,
+  Legend,
+  Bar,
   LineChart,
   Line,
   RadarChart,
@@ -40,11 +41,11 @@ import {
   PolarRadiusAxis,
   ScatterChart,
   Scatter,
-  Legend
+  
 } from 'recharts';
 import API_URL from '../utils/config';
 
-// Define your theme colors
+// Theme colors
 const themeColors = {
   primary: '#006400',   // Dark Green
   secondary: '#8B4513', // Saddle Brown
@@ -77,9 +78,12 @@ const VisualCharts: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const navigate = useNavigate();
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarSeverity] = useState<'success' | 'error' | 'warning' | 'info'>('info');
+  const [snackbarMessage] = useState('');
   const token = localStorage.getItem('jwtToken');
 
-  // Fetch expenses and budgets concurrently and ensure arrays
+  // Fetch user's expenses and budgets
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -87,7 +91,6 @@ const VisualCharts: React.FC = () => {
           axios.get(`${API_URL}/api/expenses`, { headers: { Authorization: `Bearer ${token}` } }),
           axios.get(`${API_URL}/api/budgets`, { headers: { Authorization: `Bearer ${token}` } }),
         ]);
-
         let expensesData = expensesRes.data;
         if (!Array.isArray(expensesData)) {
           expensesData = expensesData.$values ? expensesData.$values : [];
@@ -108,28 +111,7 @@ const VisualCharts: React.FC = () => {
     fetchData();
   }, [token]);
 
-  // Function to handle CSV download using your endpoint (JWT is used to determine the UserID)
-  const handleDownloadCSV = async () => {
-    try {
-      const response = await axios.get(`${API_URL}/api/csv/download`, {
-        headers: { Authorization: `Bearer ${token}` },
-        responseType: 'blob',
-      });
-      
-      // Create a blob URL and simulate a click to download the CSV file
-      const url = window.URL.createObjectURL(new Blob([response.data], { type: 'text/csv' }));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', 'UserCsvController.csv');
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } catch (error) {
-      console.error('Error downloading CSV file:', error);
-    }
-  };
-
-  // ----- Chart Data Calculations -----
+  // --- Chart Data Calculations ---
 
   // 1. Pie Chart: Expense Breakdown by Category
   const expenseCategoryData = expenses.reduce((acc: { [key: string]: number }, expense) => {
@@ -168,34 +150,31 @@ const VisualCharts: React.FC = () => {
     expense: expenseMonthData[month] || 0,
   }));
 
-  // 4. Radar Chart: Category Performance (Budget vs Expense)
-  const categories = Array.from(
-    new Set([...budgets.map((b) => b.category), ...expenses.map((e) => e.category)])
-  );
+  // 4. Radar Chart: Expense Radar Chart (Category Performance)
+  const categories = Array.from(new Set([...Object.keys(expenseCategoryData)]));
   const radarData = categories.map((category) => {
-    const totalBudget = budgets.filter((b) => b.category === category).reduce((sum, b) => sum + b.amount, 0);
-    const totalExpense = expenses.filter((e) => e.category === category).reduce((sum, e) => sum + e.amount, 0);
+    const totalBudget = budgets.filter(b => b.category === category).reduce((sum, b) => sum + b.amount, 0);
+    const totalExpense = expenses.filter(e => e.category === category).reduce((sum, e) => sum + e.amount, 0);
     return { category, budget: totalBudget, expense: totalExpense };
   });
 
-  // 5. Scatter Chart: Each Expense by Category
-  const scatterData = expenses.map((expense) => ({
+  // 5. Scatter Chart: Expense Scatter Plot (each expense by category)
+  const scatterData = expenses.map(expense => ({
     category: expense.category,
     amount: expense.amount,
   }));
 
-  // 6. Cumulative Expenses Over Time (New)
-  const sortedExpenses = [...expenses].sort(
-    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-  );
+  // 6. Cumulative Expenses Over Time
+  const sortedExpenses = [...expenses].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   let cumulative = 0;
-  const cumulativeData = sortedExpenses.map((expense) => {
+  const cumulativeData = sortedExpenses.map(expense => {
     cumulative += expense.amount;
     return { date: new Date(expense.date).toLocaleDateString(), cumulative };
   });
 
-  // 7. Budget Utilization (New)
+  // 7. Budget Utilization (Donut Chart): Used vs. Remaining
   const totalExpense = expenses.reduce((sum, exp) => sum + exp.amount, 0);
+  const averageExpense = expenses.length > 0 ? totalExpense / expenses.length : 0;
   const totalBudget = budgets.reduce((sum, bud) => sum + bud.amount, 0);
   const budgetRemaining = totalBudget - totalExpense > 0 ? totalBudget - totalExpense : 0;
   const utilizationData = [
@@ -203,31 +182,47 @@ const VisualCharts: React.FC = () => {
     { name: 'Remaining', value: budgetRemaining },
   ];
 
-  // 8. Stacked Bar Chart: Monthly Expenses by Category (New)
+  // 8. Stacked Bar Chart: Monthly Expenses by Category
   const monthlyCategoryData: { [month: string]: { [category: string]: number } } = {};
-  expenses.forEach((expense) => {
-    const month = new Date(expense.date).toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
-    if (!monthlyCategoryData[month]) {
-      monthlyCategoryData[month] = {};
-    }
-    monthlyCategoryData[month][expense.category] = (monthlyCategoryData[month][expense.category] || 0) + expense.amount;
+  expenses.forEach(exp => {
+    const month = new Date(exp.date).toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
+    if (!monthlyCategoryData[month]) monthlyCategoryData[month] = {};
+    monthlyCategoryData[month][exp.category] = (monthlyCategoryData[month][exp.category] || 0) + exp.amount;
   });
-  const stackedBarData = Object.entries(monthlyCategoryData).map(([month, catData]) => ({
-    month,
-    ...catData,
-  }));
-  const allCategories = Array.from(new Set(expenses.map((e) => e.category)));
+  const stackedBarData = Object.entries(monthlyCategoryData).map(([month, catData]) => ({ month, ...catData }));
+  const allCategories = Array.from(new Set(expenses.map(e => e.category)));
 
-  // ----- End Chart Data Calculations -----
+  // 9. Doughnut Chart: Budget vs Expense Distribution by Total Values
+  const balance = totalBudget - totalExpense;
+  const distributionData = [
+    { name: "Budgets", value: totalBudget },
+    { name: "Expenses", value: totalExpense },
+    { name: "Balance", value: balance },
+  ];
 
-  // Function to delete an expense
-  const handleDeleteExpense = async (id: number) => {
+  // 10. Gauge Chart: User Budget Adherence (simulate with half‑pie)
+  const adherence = totalBudget > 0 ? ((totalBudget - totalExpense) / totalBudget) * 100 : 0;
+  const gaugeData = [
+    { name: "Adherence", value: adherence },
+    { name: "Deviation", value: 100 - adherence },
+  ];
+
+  // ---------------- UI Layout ----------------
+  const handleDownloadCSV = async () => {
     try {
-      await axios.delete(`${API_URL}/api/expenses/${id}`, { headers: { Authorization: `Bearer ${token}` } });
-      setExpenses(expenses.filter((exp) => exp.expenseID !== id));
-    } catch (err) {
-      console.error('Error deleting expense:', err);
-      setError('Failed to delete expense');
+      const response = await axios.get(`${API_URL}/api/csv/download`, {
+        headers: { Authorization: `Bearer ${token}` },
+        responseType: 'blob',
+      });
+      const url = window.URL.createObjectURL(new Blob([response.data], { type: 'text/csv' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'UserCsvController.csv');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error('Error downloading CSV file:', error);
     }
   };
 
@@ -243,27 +238,23 @@ const VisualCharts: React.FC = () => {
           backgroundColor: themeColors.background,
         }}
       >
-        {/* AppBar */}
         <AppBar position="static" sx={{ backgroundColor: themeColors.primary }}>
           <Toolbar>
             <Typography variant="h6" sx={{ flexGrow: 1 }}>
-              Visual Dashboard
+              My Dashboard
             </Typography>
-            <Button color="inherit" onClick={() => navigate('/budget')}>
-              Budget Manager
-            </Button>
             <Button color="inherit" onClick={() => navigate('/expenses')}>
               Expenses
+            </Button>
+            <Button color="inherit" onClick={() => navigate('/budgets')}>
+              Budgets
             </Button>
             <Button color="inherit" onClick={() => navigate('/')}>
               Home
             </Button>
           </Toolbar>
         </AppBar>
-
-        {/* Main Content */}
         <Container maxWidth="lg" sx={{ flex: 1, mt: 4, mb: 4 }}>
-          {/* Download CSV Button using theme colors */}
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
             <Button
               variant="contained"
@@ -277,7 +268,6 @@ const VisualCharts: React.FC = () => {
               Download CSV
             </Button>
           </Box>
-
           {loading ? (
             <Typography align="center">Loading data...</Typography>
           ) : error ? (
@@ -287,169 +277,174 @@ const VisualCharts: React.FC = () => {
               <Typography variant="h4" align="center" gutterBottom>
                 Dashboard Insights
               </Typography>
-
-              <Grid container spacing={4} sx={{ mb: 4 }}>
-                {/* Pie Chart */}
+              <Box sx={{ mb: 4 }}>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} sm={6}>
+                    <Paper sx={{ p: 2, textAlign: 'center' }}>
+                      <Typography variant="subtitle1">Total Expenses</Typography>
+                      <Typography variant="h5">Ksh {totalExpense.toFixed(2)}</Typography>
+                    </Paper>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Paper sx={{ p: 2, textAlign: 'center' }}>
+                      <Typography variant="subtitle1">Total Budgets</Typography>
+                      <Typography variant="h5">Ksh {totalBudget.toFixed(2)}</Typography>
+                    </Paper>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Paper sx={{ p: 2, textAlign: 'center' }}>
+                      <Typography variant="subtitle1">Average Expense</Typography>
+                      <Typography variant="h5">Ksh {averageExpense.toFixed(2)}</Typography>
+                    </Paper>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Paper sx={{ p: 2, textAlign: 'center' }}>
+                      <Typography variant="subtitle1">Balance</Typography>
+                      <Typography variant="h5">Ksh {balance.toFixed(2)}</Typography>
+                    </Paper>
+                  </Grid>
+                </Grid>
+              </Box>
+              
+              {/* Charts Grid */}
+              <Grid container spacing={4}>
+                {/* Chart 1: Pie Chart – Expense Breakdown by Category */}
                 <Grid item xs={12} md={6}>
-                  <Paper sx={{ p: 3, boxShadow: 3, height: '350px' }}>
-                    <Typography variant="h6" gutterBottom>
-                      Expense Breakdown by Category
+                  <Paper sx={{ p: 2, height: '350px' }}>
+                    <Typography variant="h6" sx={{ mb: 1, color: themeColors.primary }}>
+                      Expense Breakdown by Category 🍕
                     </Typography>
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height="85%">
                       <PieChart>
                         <Pie data={pieData} dataKey="value" nameKey="name" outerRadius={100} label>
                           {pieData.map((_, index) => (
                             <Cell key={`cell-${index}`} fill={pieColors[index % pieColors.length]} />
                           ))}
                         </Pie>
-                        <RechartsTooltip />
+                        <RechartsTooltip formatter={(value: number) => `Ksh ${value}`} />
                       </PieChart>
                     </ResponsiveContainer>
                   </Paper>
                 </Grid>
-
-                {/* Bar Chart */}
+                {/* Chart 2: Bar Chart – Daily Expense Totals */}
                 <Grid item xs={12} md={6}>
-                  <Paper sx={{ p: 3, boxShadow: 3, height: '350px' }}>
-                    <Typography variant="h6" gutterBottom>
+                  <Paper sx={{ p: 2, height: '350px' }}>
+                    <Typography variant="h6" sx={{ mb: 1, color: themeColors.primary }}>
                       Daily Expense Totals
                     </Typography>
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height="85%">
                       <BarChart data={barData}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="date" stroke={themeColors.text} />
                         <YAxis stroke={themeColors.text} />
-                        <RechartsTooltip />
+                        <RechartsTooltip formatter={(value: number) => `Ksh ${value}`} />
                         <Bar dataKey="amount" fill={themeColors.primary} />
                       </BarChart>
                     </ResponsiveContainer>
                   </Paper>
                 </Grid>
-
-                {/* Line Chart */}
+                {/* Chart 3: Line Chart – Monthly Budget vs Expense Trend */}
                 <Grid item xs={12} md={6}>
-                  <Paper sx={{ p: 3, boxShadow: 3, height: '350px' }}>
-                    <Typography variant="h6" gutterBottom>
+                  <Paper sx={{ p: 2, height: '350px' }}>
+                    <Typography variant="h6" sx={{ mb: 1, color: themeColors.primary }}>
                       Monthly Budget vs Expense Trend
                     </Typography>
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height="85%">
                       <LineChart data={lineData}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="month" stroke={themeColors.text} />
                         <YAxis stroke={themeColors.text} />
-                        <RechartsTooltip />
+                        <RechartsTooltip formatter={(value: number) => `Ksh ${value}`} />
+                        <Legend />
                         <Line type="monotone" dataKey="budget" stroke={themeColors.primary} />
                         <Line type="monotone" dataKey="expense" stroke={themeColors.accent} />
                       </LineChart>
                     </ResponsiveContainer>
                   </Paper>
                 </Grid>
-
-                {/* Radar Chart */}
+                {/* Chart 4: Radar Chart – Expense Radar Chart */}
                 <Grid item xs={12} md={6}>
-                  <Paper sx={{ p: 3, boxShadow: 3, height: '350px' }}>
-                    <Typography variant="h6" gutterBottom>
-                      Category Performance (Budget vs Expense)
+                  <Paper sx={{ p: 2, height: '350px' }}>
+                    <Typography variant="h6" sx={{ mb: 1, color: themeColors.primary }}>
+                      Expense Radar Chart
                     </Typography>
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height="85%">
                       <RadarChart data={radarData}>
                         <PolarGrid />
                         <PolarAngleAxis dataKey="category" stroke={themeColors.text} />
                         <PolarRadiusAxis stroke={themeColors.text} />
-                        <Radar
-                          name="Budget"
-                          dataKey="budget"
-                          stroke={themeColors.primary}
-                          fill={themeColors.primary}
-                          fillOpacity={0.6}
-                        />
-                        <Radar
-                          name="Expense"
-                          dataKey="expense"
-                          stroke={themeColors.accent}
-                          fill={themeColors.accent}
-                          fillOpacity={0.6}
-                        />
-                        <RechartsTooltip />
+                        <Radar name="Budget" dataKey="budget" stroke={themeColors.primary} fill={themeColors.primary} fillOpacity={0.6} />
+                        <Radar name="Expense" dataKey="expense" stroke={themeColors.accent} fill={themeColors.accent} fillOpacity={0.6} />
+                        <RechartsTooltip formatter={(value: number) => `Ksh ${value}`} />
+                        <Legend />
                       </RadarChart>
                     </ResponsiveContainer>
                   </Paper>
                 </Grid>
-
-                {/* Scatter Chart */}
-                <Grid item xs={12}>
-                  <Paper sx={{ p: 3, boxShadow: 3, height: '350px' }}>
-                    <Typography variant="h6" gutterBottom>
+                {/* Chart 5: Scatter Chart – Expense Scatter Plot */}
+                <Grid item xs={12} md={6}>
+                  <Paper sx={{ p: 2, height: '350px' }}>
+                    <Typography variant="h6" sx={{ mb: 1, color: themeColors.primary }}>
                       Expense Scatter Plot
                     </Typography>
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height="85%">
                       <ScatterChart>
                         <CartesianGrid />
-                        <XAxis type="category" dataKey="category" name="Category" stroke={themeColors.text} />
-                        <YAxis type="number" dataKey="amount" name="Amount" stroke={themeColors.text} />
-                        <RechartsTooltip cursor={{ strokeDasharray: '3 3' }} />
+                        <XAxis type="category" dataKey="category" stroke={themeColors.text} />
+                        <YAxis type="number" dataKey="amount" stroke={themeColors.text} />
+                        <RechartsTooltip cursor={{ strokeDasharray: '3 3' }} formatter={(value: number) => `Ksh ${value}`} />
                         <Scatter name="Expenses" data={scatterData} fill={themeColors.accent} />
                       </ScatterChart>
                     </ResponsiveContainer>
                   </Paper>
                 </Grid>
-
-                {/* New Chart 1: Cumulative Expenses Over Time */}
+                {/* Chart 6: Line Chart – Cumulative Expenses Over Time */}
                 <Grid item xs={12} md={6}>
-                  <Paper sx={{ p: 3, boxShadow: 3, height: '350px' }}>
-                    <Typography variant="h6" gutterBottom>
+                  <Paper sx={{ p: 2, height: '350px' }}>
+                    <Typography variant="h6" sx={{ mb: 1, color: themeColors.primary }}>
                       Cumulative Expenses Over Time
                     </Typography>
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height="85%">
                       <LineChart data={cumulativeData}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="date" stroke={themeColors.text} />
                         <YAxis stroke={themeColors.text} />
-                        <RechartsTooltip />
+                        <RechartsTooltip formatter={(value: number) => `Ksh ${value}`} />
                         <Line type="monotone" dataKey="cumulative" stroke={themeColors.primary} />
                       </LineChart>
                     </ResponsiveContainer>
                   </Paper>
                 </Grid>
-
-                {/* New Chart 2: Budget Utilization (Donut Chart) */}
+                {/* Chart 7: Doughnut Chart – Budget Utilization */}
                 <Grid item xs={12} md={6}>
-                  <Paper sx={{ p: 3, boxShadow: 3, height: '350px' }}>
-                    <Typography variant="h6" gutterBottom>
+                  <Paper sx={{ p: 2, height: '350px' }}>
+                    <Typography variant="h6" sx={{ mb: 1, color: themeColors.primary }}>
                       Budget Utilization
                     </Typography>
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height="85%">
                       <PieChart>
-                        <Pie
-                          data={utilizationData}
-                          dataKey="value"
-                          nameKey="name"
-                          innerRadius={60}
-                          outerRadius={100}
-                          label
-                        >
+                        <Pie data={utilizationData} dataKey="value" nameKey="name" innerRadius={60} outerRadius={100} label>
                           {utilizationData.map((_, index) => (
                             <Cell key={`cell-util-${index}`} fill={pieColors[index % pieColors.length]} />
                           ))}
                         </Pie>
-                        <RechartsTooltip />
+                        <RechartsTooltip formatter={(value: number) => `Ksh ${value}`} />
                       </PieChart>
                     </ResponsiveContainer>
                   </Paper>
                 </Grid>
-
-                {/* New Chart 3: Stacked Bar Chart: Monthly Expenses by Category */}
-                <Grid item xs={12}>
-                  <Paper sx={{ p: 3, boxShadow: 3, height: '400px' }}>
-                    <Typography variant="h6" gutterBottom>
+                {/* Chart 8: Stacked Bar Chart – Monthly Expenses by Category */}
+                <Grid item xs={12} md={6}>
+                  <Paper sx={{ p: 2, height: '400px' }}>
+                    <Typography variant="h6" sx={{ mb: 1, color: themeColors.primary }}>
                       Monthly Expenses by Category
                     </Typography>
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height="90%">
                       <BarChart data={stackedBarData}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="month" stroke={themeColors.text} />
                         <YAxis stroke={themeColors.text} />
-                        <RechartsTooltip />
+                        <RechartsTooltip formatter={(value: number) => `Ksh ${value}`} />
                         <Legend />
                         {allCategories.map((cat, index) => (
                           <Bar key={cat} dataKey={cat} stackId="a" fill={pieColors[index % pieColors.length]} />
@@ -458,10 +453,53 @@ const VisualCharts: React.FC = () => {
                     </ResponsiveContainer>
                   </Paper>
                 </Grid>
+                {/* Chart 9: Doughnut Chart – Budget vs Expense Distribution */}
+                <Grid item xs={12} md={6}>
+                  <Paper sx={{ p: 2, height: '350px' }}>
+                    <Typography variant="h6" sx={{ mb: 1, color: themeColors.primary }}>
+                      Budget vs Expense Distribution 💳
+                    </Typography>
+                    <ResponsiveContainer width="100%" height="85%">
+                      <PieChart>
+                        <Pie data={distributionData} dataKey="value" nameKey="name" innerRadius={40} outerRadius={100} label>
+                          {distributionData.map((_, index) => (
+                            <Cell key={`cell-dist-${index}`} fill={["#8884d8", "#82ca9d", "#ffc658"][index % 3]} />
+                          ))}
+                        </Pie>
+                        <RechartsTooltip formatter={(value: number | string) => `Ksh ${value}`} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </Paper>
+                </Grid>
+                {/* Chart 10: Gauge Chart – User Budget Adherence */}
+                <Grid item xs={12} md={6}>
+                  <Paper sx={{ p: 2, height: '350px' }}>
+                    <Typography variant="h6" sx={{ mb: 1, color: themeColors.primary }}>
+                      User Budget Adherence 📊
+                    </Typography>
+                    <ResponsiveContainer width="100%" height="85%">
+                      <PieChart>
+                        <Pie
+                          data={gaugeData}
+                          dataKey="value"
+                          startAngle={180}
+                          endAngle={0}
+                          outerRadius={100}
+                          label
+                        >
+                          {gaugeData.map((_, index) => (
+                            <Cell key={`cell-gauge-${index}`} fill={["#82ca9d", "#ff6b6b"][index % 2]} />
+                          ))}
+                        </Pie>
+                        <RechartsTooltip formatter={(value: number) => `${value.toFixed(2)}%`} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </Paper>
+                </Grid>
               </Grid>
 
-              {/* Expense Table */}
-              <Paper sx={{ p: 3, boxShadow: 3, borderRadius: 2 }}>
+              {/* Expense Details Table */}
+              <Paper sx={{ p: 3, mt: 4, borderRadius: 2 }}>
                 <Typography variant="h6" gutterBottom>
                   Expense Details
                 </Typography>
@@ -470,29 +508,18 @@ const VisualCharts: React.FC = () => {
                     <TableHead>
                       <TableRow>
                         <TableCell sx={{ fontWeight: 'bold' }}>Category</TableCell>
-                        <TableCell sx={{ fontWeight: 'bold' }}>Amount</TableCell>
+                        <TableCell sx={{ fontWeight: 'bold' }}>Amount (Ksh)</TableCell>
                         <TableCell sx={{ fontWeight: 'bold' }}>Date</TableCell>
                         <TableCell sx={{ fontWeight: 'bold' }}>Description</TableCell>
-                        <TableCell sx={{ fontWeight: 'bold' }}>Actions</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {expenses.map((expense) => (
+                      {expenses.map(expense => (
                         <TableRow key={expense.expenseID}>
                           <TableCell>{expense.category}</TableCell>
-                          <TableCell>${expense.amount.toFixed(2)}</TableCell>
+                          <TableCell>{expense.amount.toFixed(2)}</TableCell>
                           <TableCell>{new Date(expense.date).toLocaleDateString()}</TableCell>
                           <TableCell>{expense.description}</TableCell>
-                          <TableCell>
-                            <Stack direction="row" spacing={1}>
-                              <Button variant="outlined" onClick={() => navigate(`/expense/edit/${expense.expenseID}`)}>
-                                Edit
-                              </Button>
-                              <Button variant="outlined" color="error" onClick={() => handleDeleteExpense(expense.expenseID)}>
-                                Delete
-                              </Button>
-                            </Stack>
-                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -502,16 +529,26 @@ const VisualCharts: React.FC = () => {
             </>
           )}
         </Container>
-
-        {/* Footer */}
         <Box sx={{ backgroundColor: '#F5F5F5', py: 2, textAlign: 'center' }}>
           <Typography variant="body2" color="text.secondary">
             &copy; {new Date().getFullYear()} Budget App. All rights reserved.
           </Typography>
         </Box>
       </Box>
+
+      {/* Snackbar for Notifications */}
+      <Snackbar
+        open={Boolean(snackbarOpen)}
+        autoHideDuration={3000}
+        onClose={() => setSnackbarOpen(false)}
+      >
+        <Alert onClose={() => setSnackbarOpen(false)} severity={snackbarSeverity} sx={{ width: '100%' }}>
+          {snackbarMessage}
+        </Alert>
+      </Snackbar>
     </>
   );
 };
 
 export default VisualCharts;
+

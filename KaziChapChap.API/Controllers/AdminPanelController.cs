@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using KaziChapChap.Core.Models;
 using KaziChapChap.Data;
 using KaziChapChap.Core.Services;
+using System;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -141,24 +142,42 @@ namespace KaziChapChap.API.Controllers
         [HttpPost("expenses")]
         public async Task<ActionResult<Expense>> CreateExpense(Expense expense)
         {
-            // For admin, we assume the expense's UserID and BudgetID are provided.
-            // Validate that the budget exists.
+            // For admin, both the expense's UserID and BudgetID should be provided.
+            // 1. Validate that the budget exists.
             var budget = await _context.Budgets.FindAsync(expense.BudgetID);
             if (budget == null)
             {
                 return BadRequest("Invalid budget specified.");
             }
 
-            // Calculate current total expenses for the budget.
+            // 2. Ensure that the budget belongs to the user for whom the expense is being created.
+            if (budget.UserID != expense.UserID)
+            {
+                return BadRequest("The specified budget does not belong to the user.");
+            }
+
+            // 3. Calculate current total expenses for the budget.
             var totalExpenses = _context.Expenses
                 .Where(e => e.BudgetID == expense.BudgetID)
                 .Sum(e => e.Amount);
 
-            if (totalExpenses + expense.Amount > budget.Amount)
+            var newTotal = totalExpenses + expense.Amount;
+            if (newTotal > budget.Amount)
             {
-                return BadRequest("Adding this expense would exceed the budget.");
+                // Create a notification for the overspending attempt.
+                var overspendNotification = new Notification
+                {
+                    UserID = expense.UserID,
+                    Message = $"Overspending blocked! Budget {budget.BudgetID} has a limit of {budget.Amount}, adding this expense would make the total {newTotal}.",
+                    CreatedAt = DateTime.UtcNow
+                };
+                _context.Notifications.Add(overspendNotification);
+                await _context.SaveChangesAsync();
+
+                return BadRequest("Adding this expense would exceed the budget. A notification was created.");
             }
 
+            // 4. Otherwise, add the expense.
             _context.Expenses.Add(expense);
             await _context.SaveChangesAsync();
 
@@ -179,7 +198,6 @@ namespace KaziChapChap.API.Controllers
                 return NotFound();
             }
 
-            // Optionally, if BudgetID is being updated, you could validate the new budget similarly.
             _context.Entry(existingExpense).CurrentValues.SetValues(expense);
 
             try
@@ -237,7 +255,6 @@ namespace KaziChapChap.API.Controllers
             return Ok(user);
         }
 
-        // DTO for creating a user.
         public class CreateUserDto
         {
             public string? Email { get; set; }
@@ -261,7 +278,7 @@ namespace KaziChapChap.API.Controllers
                 FirstName = dto.FirstName,
                 LastName = dto.LastName,
                 Gender = dto.Gender,
-                CreatedAt = System.DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow
             };
 
             user = await _authService.Register(user, dto.Password);
@@ -269,7 +286,6 @@ namespace KaziChapChap.API.Controllers
             return CreatedAtAction(nameof(GetUser), new { id = user.UserID }, user);
         }
 
-        // DTO for updating a user.
         public class UpdateUserDto
         {
             public int UserID { get; set; }
@@ -293,7 +309,6 @@ namespace KaziChapChap.API.Controllers
                 return NotFound();
             }
 
-            // Update user details.
             user.Email = dto.Email;
             user.FirstName = dto.FirstName;
             user.LastName = dto.LastName;
@@ -333,9 +348,9 @@ namespace KaziChapChap.API.Controllers
             return NoContent();
         }
         #endregion
-
     }
 }
+
 
 
 

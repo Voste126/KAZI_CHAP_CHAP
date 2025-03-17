@@ -1,4 +1,3 @@
-// src/components/AdminPanel.tsx
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom'; 
@@ -31,6 +30,7 @@ import {
   FormControl,
   FormControlLabel,
   FormLabel,
+  LinearProgress,
 } from '@mui/material';
 import {
   ResponsiveContainer,
@@ -46,6 +46,13 @@ import {
   Bar,
   LineChart,
   Line,
+  AreaChart,
+  Area,
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  Radar,
 } from 'recharts';
 import API_URL from '../utils/config';
 
@@ -62,6 +69,7 @@ const themeColors = {
 interface Expense {
   expenseID: number;
   userID: number;
+  budgetID: number;
   category: string;
   amount: number;
   date: string;
@@ -76,7 +84,6 @@ interface Budget {
   monthYear: string; // e.g., "2024-03-01T00:00:00Z"
 }
 
-// Updated User model with additional fields.
 interface User {
   userID: number;
   email: string;
@@ -91,15 +98,17 @@ interface User {
 const AdminPanel: React.FC<{ token: string }> = ({ token }) => {
   const navigate = useNavigate();
 
+  // Tabs and data states
   const [activeTab, setActiveTab] = useState(0);
+  const [searchName, setSearchName] = useState('');
+  const [filterGender, setFilterGender] = useState('');
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  // Filter states for users
-  const [searchName, setSearchName] = useState('');
-  const [filterGender, setFilterGender] = useState('');
+  // Analytics filter state – "all" or a specific userID
+  const [analyticsUser, setAnalyticsUser] = useState<number | "all">("all");
 
   // Dialog state for add/edit
   const [openDialog, setOpenDialog] = useState<boolean>(false);
@@ -110,9 +119,10 @@ const AdminPanel: React.FC<{ token: string }> = ({ token }) => {
   const [openDeleteConfirm, setOpenDeleteConfirm] = useState<boolean>(false);
   const [deleteRecord, setDeleteRecord] = useState<{ type: 'expense' | 'budget' | 'user'; id: number } | null>(null);
 
-  // Snackbar state for deletion confirmation
+  // Snackbar (toast) state for notifications
   const [snackbarOpen, setSnackbarOpen] = useState<boolean>(false);
   const [snackbarMessage, setSnackbarMessage] = useState<string>('');
+  const [snackbarSeverity, setSnackbarSeverity] = useState<"error" | "success">("success");
 
   // Data fetching function
   const fetchData = useCallback(async () => {
@@ -124,26 +134,17 @@ const AdminPanel: React.FC<{ token: string }> = ({ token }) => {
       ]);
 
       let expensesData = expensesRes.data;
-      if (expensesData && expensesData.$values) {
-        expensesData = expensesData.$values;
-      }
+      if (expensesData && expensesData.$values) expensesData = expensesData.$values;
       setExpenses(expensesData);
 
       let budgetsData = budgetsRes.data;
-      if (budgetsData && budgetsData.$values) {
-        budgetsData = budgetsData.$values;
-      }
+      if (budgetsData && budgetsData.$values) budgetsData = budgetsData.$values;
       setBudgets(budgetsData);
 
       let usersData = usersRes.data;
-      if (usersData && usersData.$values) {
-        usersData = usersData.$values;
-      }
-      // Remove the password field if present
+      if (usersData && usersData.$values) usersData = usersData.$values;
       const processedUsers = usersData.map((user: User) => {
-        if (user.password) {
-          delete user.password;
-        }
+        if (user.password) delete user.password;
         return user;
       });
       setUsers(processedUsers);
@@ -156,7 +157,7 @@ const AdminPanel: React.FC<{ token: string }> = ({ token }) => {
     fetchData();
   }, [fetchData]);
 
-  // Date change handlers for budgets/expenses
+  // Date change handlers
   const handleDateChange = (date: Date | null) => {
     if (!date) return;
     const utcDate = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
@@ -183,7 +184,6 @@ const AdminPanel: React.FC<{ token: string }> = ({ token }) => {
 
   const handleSave = async () => {
     try {
-      // Validate non-negative amounts for expense and budget
       if ((dialogType === 'expense' || dialogType === 'budget') && (formData as Expense | Budget).amount! < 0) {
         setError('Amount cannot be negative.');
         return;
@@ -233,8 +233,17 @@ const AdminPanel: React.FC<{ token: string }> = ({ token }) => {
       }
       handleCloseDialog();
       fetchData();
-    } catch {
-      setError('Failed to save the record.');
+      setSnackbarMessage("Record saved successfully");
+      setSnackbarSeverity("success");
+      setSnackbarOpen(true);
+    } catch (err) {
+      if (dialogType === 'expense' && axios.isAxiosError(err) && err.response) {
+        setSnackbarMessage(err.response.data);
+        setSnackbarSeverity("error");
+        setSnackbarOpen(true);
+      } else {
+        setError('Failed to save the record.');
+      }
     }
   };
 
@@ -253,39 +262,62 @@ const AdminPanel: React.FC<{ token: string }> = ({ token }) => {
         await axios.delete(`${API_URL}/api/AdminPanel/users/${id}`, { headers: { Authorization: `Bearer ${token}` } });
       }
       fetchData();
+      setSnackbarMessage("Record deleted successfully");
+      setSnackbarSeverity("success");
+      setSnackbarOpen(true);
     } catch {
       setError('Failed to delete the record.');
     }
   };
 
   // ================= Analytics Data Preparation =================
+  // Filter data by selected analytics user if applicable.
+  const filteredExpenses = analyticsUser === "all" 
+    ? expenses 
+    : expenses.filter(exp => exp.userID === analyticsUser);
+  const filteredBudgets = analyticsUser === "all" 
+    ? budgets 
+    : budgets.filter(bud => bud.userID === analyticsUser);
+
+  const totalExpense = filteredExpenses.reduce((acc, exp) => acc + exp.amount, 0);
+  const totalBudget = filteredBudgets.reduce((acc, bud) => acc + bud.amount, 0);
+  const averageExpense = filteredExpenses.length ? totalExpense / filteredExpenses.length : 0;
+  const balance = totalBudget - totalExpense;
+
+  // Expense breakdown by category for filtered data.
   const expenseByCategory: { [key: string]: number } = {};
-  expenses.forEach(exp => {
+  filteredExpenses.forEach(exp => {
     expenseByCategory[exp.category] = (expenseByCategory[exp.category] || 0) + exp.amount;
   });
   const pieData = Object.entries(expenseByCategory).map(([category, value]) => ({ name: category, value }));
   const pieColors = [themeColors.primary, themeColors.secondary, themeColors.accent, themeColors.text];
 
-  // Additional analytics calculations
-  const totalExpense = expenses.reduce((acc, exp) => acc + exp.amount, 0);
-  const totalBudget = budgets.reduce((acc, bud) => acc + bud.amount, 0);
-  const averageExpense = expenses.length ? totalExpense / expenses.length : 0;
-
+  // Monthly expenses for filtered data.
   const monthlyExpensesMap: { [month: string]: number } = {};
-  expenses.forEach(exp => {
+  filteredExpenses.forEach(exp => {
     const month = new Date(exp.date).toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
     monthlyExpensesMap[month] = (monthlyExpensesMap[month] || 0) + exp.amount;
   });
   const monthlyExpensesData = Object.entries(monthlyExpensesMap).map(([month, total]) => ({ month, total }));
-  // ===================================================================
 
-  // Filter the users based on search text and selected gender
+  // Simulated monthly income: expense + 20,000 for demonstration.
+  const monthlyIncomeData = monthlyExpensesData.map(item => ({
+    month: item.month,
+    income: item.total + 20000,
+    expense: item.total
+  }));
+
+  // Radar chart data for expense categories.
+  const radarData = Object.entries(expenseByCategory).map(([category, total]) => ({ category, total }));
+
+  // ================= Users Filtering =================
   const filteredUsers = users.filter(user => {
     const nameMatch = `${user.firstName} ${user.lastName}`.toLowerCase().includes(searchName.toLowerCase())
       || user.email.toLowerCase().includes(searchName.toLowerCase());
     const genderMatch = filterGender ? user.gender === filterGender : true;
     return nameMatch && genderMatch;
   });
+  // ===================================================================
 
   return (
     <Box sx={{ height: '100vh', width: '100vw', display: 'flex', flexDirection: 'column', backgroundColor: themeColors.background }}>
@@ -302,9 +334,7 @@ const AdminPanel: React.FC<{ token: string }> = ({ token }) => {
               borderColor: themeColors.primary,
               backgroundColor: themeColors.background,
               textTransform: 'none',
-              '&:hover': {
-                backgroundColor: themeColors.accent,
-              },
+              '&:hover': { backgroundColor: themeColors.accent },
             }}
           >
             Back Home
@@ -330,76 +360,268 @@ const AdminPanel: React.FC<{ token: string }> = ({ token }) => {
         {/* ===================== Analytics Tab ===================== */}
         {activeTab === 0 && (
           <Box>
+            <Stack direction="row" spacing={2} sx={{ mb: 2, alignItems: 'center' }}>
+              <Typography variant="h6" sx={{ color: themeColors.primary }}>
+                Filter by User:
+              </Typography>
+              <TextField
+                select
+                label="User"
+                value={analyticsUser === "all" ? "all" : analyticsUser}
+                onChange={(e) => setAnalyticsUser(e.target.value === "all" ? "all" : parseInt(e.target.value))}
+                variant="outlined"
+                size="small"
+              >
+                <MenuItem value="all">All Users</MenuItem>
+                {users.map(user => (
+                  <MenuItem key={user.userID} value={user.userID}>
+                    {user.firstName} {user.lastName} ({user.email})
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Stack>
             <Typography variant="h4" gutterBottom sx={{ color: themeColors.primary }}>
               Analytics Dashboard
             </Typography>
-
-            {/* Summary Metrics */}
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 4 }}>
               <Paper sx={{ p: 2, flex: 1, textAlign: 'center' }}>
                 <Typography variant="subtitle1">Total Expenses</Typography>
-                <Typography variant="h5">${totalExpense.toFixed(2)}</Typography>
+                <Typography variant="h5">Ksh {totalExpense.toFixed(2)}</Typography>
               </Paper>
               <Paper sx={{ p: 2, flex: 1, textAlign: 'center' }}>
                 <Typography variant="subtitle1">Total Budgets</Typography>
-                <Typography variant="h5">${totalBudget.toFixed(2)}</Typography>
+                <Typography variant="h5">Ksh {totalBudget.toFixed(2)}</Typography>
               </Paper>
               <Paper sx={{ p: 2, flex: 1, textAlign: 'center' }}>
                 <Typography variant="subtitle1">Average Expense</Typography>
-                <Typography variant="h5">${averageExpense.toFixed(2)}</Typography>
+                <Typography variant="h5">Ksh {averageExpense.toFixed(2)}</Typography>
+              </Paper>
+              <Paper sx={{ p: 2, flex: 1, textAlign: 'center' }}>
+                <Typography variant="subtitle1">Balance</Typography>
+                <Typography variant="h5">Ksh {balance.toFixed(2)}</Typography>
               </Paper>
             </Stack>
+            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 2 }}>
+              {/* Chart 1: Monthly Expense Breakdown (Pie Chart) 🍕 */}
+              <Paper sx={{ p: 2, height: 300 }}>
+                <Typography variant="h6" sx={{ color: themeColors.primary, mb: 1 }}>
+                  Monthly Expense Breakdown 🍕
+                </Typography>
+                <ResponsiveContainer width="100%" height="85%">
+                  <PieChart>
+                    <Pie data={pieData} dataKey="value" nameKey="name" outerRadius={80} label>
+                      {pieData.map((_, index) => (
+                        <Cell key={`cell-${index}`} fill={pieColors[index % pieColors.length]} />
+                      ))}
+                    </Pie>
+                    <RechartsTooltip formatter={(value: number) => `Ksh ${value}`} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </Paper>
 
-            {/* Expense Breakdown by Category (Pie Chart) */}
-            <Paper sx={{ p: 3, mb: 4 }}>
-              <Typography variant="h6" gutterBottom sx={{ color: themeColors.primary }}>
-                Expense Breakdown by Category (Pie Chart)
-              </Typography>
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie data={pieData} dataKey="value" nameKey="name" outerRadius={100} label>
-                    {pieData.map((_, index) => (
-                      <Cell key={`cell-${index}`} fill={pieColors[index % pieColors.length]} />
-                    ))}
-                  </Pie>
-                  <RechartsTooltip />
-                </PieChart>
-              </ResponsiveContainer>
-            </Paper>
+              {/* Chart 2: Expense Trends Over Time (Line Chart) 📈 */}
+              <Paper sx={{ p: 2, height: 300 }}>
+                <Typography variant="h6" sx={{ color: themeColors.primary, mb: 1 }}>
+                  Expense Trends Over Time 📈
+                </Typography>
+                <ResponsiveContainer width="100%" height="85%">
+                  <LineChart data={monthlyExpensesData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis tickFormatter={(value) => `Ksh ${value}`} />
+                    <RechartsTooltip formatter={(value: number) => `Ksh ${value}`} />
+                    <Legend />
+                    <Line type="monotone" dataKey="total" stroke={themeColors.accent} strokeWidth={2} name="Expenses" />
+                  </LineChart>
+                </ResponsiveContainer>
+              </Paper>
 
-            {/* Monthly Expenses (Bar Chart) */}
-            <Paper sx={{ p: 3, mb: 4 }}>
-              <Typography variant="h6" gutterBottom sx={{ color: themeColors.primary }}>
-                Monthly Expenses (Bar Chart)
-              </Typography>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={monthlyExpensesData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
-                  <YAxis />
-                  <RechartsTooltip />
-                  <Legend />
-                  <Bar dataKey="total" fill={themeColors.secondary} name="Expenses" />
-                </BarChart>
-              </ResponsiveContainer>
-            </Paper>
+              {/* Chart 3: Income vs. Expenses (Bar Chart) 💰 */}
+              <Paper sx={{ p: 2, height: 300 }}>
+                <Typography variant="h6" sx={{ color: themeColors.primary, mb: 1 }}>
+                  Income vs. Expenses 💰
+                </Typography>
+                <ResponsiveContainer width="100%" height="85%">
+                  <BarChart data={monthlyIncomeData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis tickFormatter={(value) => `Ksh ${value}`} />
+                    <RechartsTooltip formatter={(value: number | string) => `Ksh ${value}`} />
+                    <Legend />
+                    <Bar dataKey="income" fill={themeColors.primary} name="Income" />
+                    <Bar dataKey="expense" fill={themeColors.secondary} name="Expenses" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </Paper>
 
-            {/* Expense Trend (Line Chart) */}
-            <Paper sx={{ p: 3, mb: 4 }}>
-              <Typography variant="h6" gutterBottom sx={{ color: themeColors.primary }}>
-                Expense Trend (Line Chart)
-              </Typography>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={monthlyExpensesData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
-                  <YAxis />
-                  <RechartsTooltip />
-                  <Legend />
-                  <Line type="monotone" dataKey="total" stroke={themeColors.accent} strokeWidth={2} name="Expenses Trend" />
-                </LineChart>
-              </ResponsiveContainer>
-            </Paper>
+              {/* Chart 4: Savings Progress (Progress Bar) 🎯 */}
+              <Paper sx={{ p: 2, height: 300, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                <Typography variant="h6" sx={{ color: themeColors.primary, mb: 1 }}>
+                  Savings Progress 🎯
+                </Typography>
+                {(() => {
+                  const savingGoal = 100000; // Ksh 100,000 goal
+                  // Simulate total income as totalBudget * 1.1 for demo purposes
+                  const totalIncome = totalBudget * 1.1;
+                  const savings = totalIncome - totalExpense;
+                  const progress = Math.min((savings / savingGoal) * 100, 100);
+                  return (
+                    <>
+                      <Typography variant="body1">Savings: Ksh {savings.toFixed(2)} / {savingGoal}</Typography>
+                      <Box sx={{ width: '100%', mt: 2 }}>
+                        <LinearProgress variant="determinate" value={progress} sx={{ height: 10, borderRadius: 5, backgroundColor: '#ddd' }} />
+                      </Box>
+                      <Typography variant="body2" sx={{ mt: 1 }}>{progress.toFixed(2)}% of goal achieved</Typography>
+                    </>
+                  );
+                })()}
+              </Paper>
+
+              {/* Chart 5: Cash Flow Statement (Stacked Bar Chart) 🔄 */}
+              <Paper sx={{ p: 2, height: 300 }}>
+                <Typography variant="h6" sx={{ color: themeColors.primary, mb: 1 }}>
+                  Cash Flow Statement 🔄
+                </Typography>
+                <ResponsiveContainer width="100%" height="85%">
+                  <BarChart data={monthlyIncomeData} stackOffset="sign">
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis tickFormatter={(value) => `Ksh ${value}`} />
+                    <RechartsTooltip formatter={(value: number | string) => `Ksh ${value}`} />
+                    <Legend />
+                    <Bar dataKey="income" stackId="a" fill={themeColors.primary} name="Income" />
+                    <Bar dataKey="expense" stackId="a" fill={themeColors.secondary} name="Expenses" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </Paper>
+
+              {/* Chart 6: Expense Forecast (Area Chart) 🔮 */}
+              <Paper sx={{ p: 2, height: 300 }}>
+                <Typography variant="h6" sx={{ color: themeColors.primary, mb: 1 }}>
+                  Expense Forecast 🔮
+                </Typography>
+                <ResponsiveContainer width="100%" height="85%">
+                  <AreaChart data={
+                    (() => {
+                      const forecastData = [...monthlyExpensesData];
+                      if (forecastData.length > 0) {
+                        const last = forecastData[forecastData.length - 1];
+                        const forecastExpense = last.total * 1.1;
+                        forecastData.push({ month: "Forecast", total: forecastExpense });
+                      }
+                      return forecastData;
+                    })()
+                  }>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis tickFormatter={(value) => `Ksh ${value}`} />
+                    <RechartsTooltip formatter={(value: number | string) => `Ksh ${value}`} />
+                    <Legend />
+                    <Area type="monotone" dataKey="total" stroke={themeColors.accent} fill={themeColors.accent} name="Forecasted Expenses" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </Paper>
+
+              {/* Chart 7: Top Expense Categories (Horizontal Bar Chart) 🏆 */}
+              <Paper sx={{ p: 2, height: 300 }}>
+                <Typography variant="h6" sx={{ color: themeColors.primary, mb: 1 }}>
+                  Top Expense Categories 🏆
+                </Typography>
+                <ResponsiveContainer width="100%" height="85%">
+                  <BarChart layout="vertical" data={
+                    (() => {
+                      const categories = Object.entries(expenseByCategory).map(([name, value]) => ({ name, value }));
+                      categories.sort((a, b) => b.value - a.value);
+                      return categories;
+                    })()
+                  }>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis type="number" tickFormatter={(value) => `Ksh ${value}`} />
+                    <YAxis dataKey="name" type="category" />
+                    <RechartsTooltip formatter={(value: number | string) => `Ksh ${value}`} />
+                    <Legend />
+                    <Bar dataKey="value" fill={themeColors.secondary} name="Expenses" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </Paper>
+
+              {/* Chart 8: Budget vs Expense Distribution by Total Values (Doughnut Chart) 💳 */}
+              <Paper sx={{ p: 2, height: 300 }}>
+                <Typography variant="h6" sx={{ color: themeColors.primary, mb: 1 }}>
+                  Budget vs Expense Distribution 💳
+                </Typography>
+                <ResponsiveContainer width="100%" height="85%">
+                  <PieChart>
+                    <Pie
+                      data={[
+                        { name: "Budgets", value: totalBudget },
+                        { name: "Expenses", value: totalExpense },
+                        { name: "Balance", value: balance }
+                      ]}
+                      dataKey="value"
+                      nameKey="name"
+                      innerRadius={40}
+                      outerRadius={80}
+                      label
+                    >
+                      {["#8884d8", "#82ca9d", "#ffc658"].map((color, index) => (
+                        <Cell key={`cell-${index}`} fill={color} />
+                      ))}
+                    </Pie>
+                    <RechartsTooltip formatter={(value: number | string) => `Ksh ${value}`} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </Paper>
+
+              {/* Chart 9: Expense Radar Chart (Radar Chart) */}
+              <Paper sx={{ p: 2, height: 300 }}>
+                <Typography variant="h6" sx={{ color: themeColors.primary, mb: 1 }}>
+                  Expense Radar Chart
+                </Typography>
+                <ResponsiveContainer width="100%" height="85%">
+                  <RadarChart data={radarData}>
+                    <PolarGrid />
+                    <PolarAngleAxis dataKey="category" />
+                    <PolarRadiusAxis angle={30} domain={[0, Math.max(...Object.values(expenseByCategory))]} />
+                    <Radar name="Expenses" dataKey="total" stroke={themeColors.accent} fill={themeColors.accent} fillOpacity={0.6} />
+                    <RechartsTooltip formatter={(value: number | string) => `Ksh ${value}`} />
+                    <Legend />
+                  </RadarChart>
+                </ResponsiveContainer>
+              </Paper>
+
+              {/* Chart 10: User Budget Adherence (Gauge Chart) 📊 */}
+              <Paper sx={{ p: 2, height: 300 }}>
+                <Typography variant="h6" sx={{ color: themeColors.primary, mb: 1 }}>
+                  User Budget Adherence 📊
+                </Typography>
+                <ResponsiveContainer width="100%" height="85%">
+                  <PieChart>
+                    {(() => {
+                      const adherence = totalBudget > 0 ? ((totalBudget - totalExpense) / totalBudget) * 100 : 0;
+                      return (
+                        <Pie
+                          data={[
+                            { name: "Adherence", value: adherence },
+                            { name: "Deviation", value: 100 - adherence },
+                          ]}
+                          dataKey="value"
+                          startAngle={180}
+                          endAngle={0}
+                          outerRadius={80}
+                          label
+                        >
+                          {["#82ca9d", "#ff6b6b"].map((color, index) => (
+                            <Cell key={`cell-${index}`} fill={color} />
+                          ))}
+                        </Pie>
+                      );
+                    })()}
+                    <RechartsTooltip formatter={(value: number) => `${value.toFixed(2)}%`} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </Paper>
+            </Box>
           </Box>
         )}
 
@@ -430,7 +652,7 @@ const AdminPanel: React.FC<{ token: string }> = ({ token }) => {
                       <TableRow key={exp.expenseID}>
                         <TableCell>{exp.expenseID}</TableCell>
                         <TableCell>{exp.category}</TableCell>
-                        <TableCell>${(exp.amount ?? 0).toFixed(2)}</TableCell>
+                        <TableCell>Ksh {(exp.amount ?? 0).toFixed(2)}</TableCell>
                         <TableCell>{new Date(exp.date).toLocaleDateString()}</TableCell>
                         <TableCell>{exp.description}</TableCell>
                         <TableCell>
@@ -478,7 +700,7 @@ const AdminPanel: React.FC<{ token: string }> = ({ token }) => {
                       <TableRow key={bud.budgetID}>
                         <TableCell>{bud.budgetID}</TableCell>
                         <TableCell>{bud.category}</TableCell>
-                        <TableCell>${(bud.amount ?? 0).toFixed(2)}</TableCell>
+                        <TableCell>Ksh {(bud.amount ?? 0).toFixed(2)}</TableCell>
                         <TableCell>{new Date(bud.monthYear).toLocaleDateString()}</TableCell>
                         <TableCell>
                           <Stack direction="row" spacing={1}>
@@ -505,7 +727,6 @@ const AdminPanel: React.FC<{ token: string }> = ({ token }) => {
             <Typography variant="h4" gutterBottom sx={{ color: themeColors.primary }}>
               Manage Users
             </Typography>
-            {/* Filter controls */}
             <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
               <TextField
                 label="Search by Name"
@@ -586,7 +807,7 @@ const AdminPanel: React.FC<{ token: string }> = ({ token }) => {
               <TextField
                 label="Category"
                 fullWidth
-                value={(formData as Expense | Budget).category || ''}
+                value={(formData as Expense).category || ''}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                 variant="outlined"
               />
@@ -596,7 +817,10 @@ const AdminPanel: React.FC<{ token: string }> = ({ token }) => {
                 label="User"
                 fullWidth
                 value={(formData as Expense).userID || ''}
-                onChange={(e) => setFormData({ ...formData, userID: parseInt(e.target.value) })}
+                onChange={(e) => {
+                  const selectedUser = parseInt(e.target.value);
+                  setFormData({ ...formData, userID: selectedUser, budgetID: undefined });
+                }}
                 variant="outlined"
               >
                 {users.map(user => (
@@ -605,15 +829,32 @@ const AdminPanel: React.FC<{ token: string }> = ({ token }) => {
                   </MenuItem>
                 ))}
               </TextField>
+              {/* Dropdown for selecting budget filtered by selected user */}
+              <TextField
+                select
+                label="Budget"
+                fullWidth
+                value={(formData as Expense).budgetID || ''}
+                onChange={(e) => setFormData({ ...formData, budgetID: parseInt(e.target.value) })}
+                variant="outlined"
+              >
+                {budgets
+                  .filter(budget => budget.userID === (formData as Expense).userID)
+                  .map(budget => (
+                    <MenuItem key={budget.budgetID} value={budget.budgetID}>
+                      {budget.budgetID} - {budget.category} (Ksh {budget.amount})
+                    </MenuItem>
+                  ))}
+              </TextField>
               <TextField
                 label="Amount"
                 type="number"
                 fullWidth
-                value={(formData as Expense | Budget).amount || ''}
+                value={(formData as Expense).amount || ''}
                 onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) })}
                 variant="outlined"
-                error={(formData as Expense | Budget).amount! < 0}
-                helperText={(formData as Expense | Budget).amount! < 0 ? 'Amount cannot be negative' : ''}
+                error={(formData as Expense).amount! < 0}
+                helperText={(formData as Expense).amount! < 0 ? 'Amount cannot be negative' : ''}
               />
               <TextField
                 label="Date"
@@ -633,12 +874,12 @@ const AdminPanel: React.FC<{ token: string }> = ({ token }) => {
               />
             </Stack>
           )}
-          {dialogType === 'budget' && (
+          {(dialogType === 'budget') && (
             <Stack spacing={2} sx={{ mt: 1 }}>
               <TextField
                 label="Category"
                 fullWidth
-                value={(formData as Expense | Budget).category || ''}
+                value={(formData as Budget).category || ''}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                 variant="outlined"
               />
@@ -661,11 +902,11 @@ const AdminPanel: React.FC<{ token: string }> = ({ token }) => {
                 label="Amount"
                 type="number"
                 fullWidth
-                value={(formData as Expense | Budget).amount || ''}
+                value={(formData as Budget).amount || ''}
                 onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) })}
                 variant="outlined"
-                error={(formData as Expense | Budget).amount! < 0}
-                helperText={(formData as Expense | Budget).amount! < 0 ? 'Amount cannot be negative' : ''}
+                error={(formData as Budget).amount! < 0}
+                helperText={(formData as Budget).amount! < 0 ? 'Amount cannot be negative' : ''}
               />
               <TextField
                 label="Month/Year"
@@ -752,6 +993,7 @@ const AdminPanel: React.FC<{ token: string }> = ({ token }) => {
                 handleDelete(deleteRecord.type, deleteRecord.id);
                 setOpenDeleteConfirm(false);
                 setSnackbarMessage("Record deleted successfully");
+                setSnackbarSeverity("success");
                 setSnackbarOpen(true);
               }
             }}
@@ -763,13 +1005,12 @@ const AdminPanel: React.FC<{ token: string }> = ({ token }) => {
         </DialogActions>
       </Dialog>
 
-      {/* Snackbar for deletion confirmation */}
-      <Snackbar
-        open={snackbarOpen}
-        autoHideDuration={3000}
-        onClose={() => setSnackbarOpen(false)}
-        message={snackbarMessage}
-      />
+      {/* Snackbar for notifications */}
+      <Snackbar open={snackbarOpen} autoHideDuration={3000} onClose={() => setSnackbarOpen(false)}>
+        <Alert onClose={() => setSnackbarOpen(false)} severity={snackbarSeverity} sx={{ width: '100%' }}>
+          {snackbarMessage}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };
