@@ -12,9 +12,8 @@ COPY . .
 # Set file ownership and adjust permissions to ensure write access
 RUN chown -R node:node /usr/src/app && chmod -R 777 /usr/src/app
 
-EXPOSE 5174
+EXPOSE 8080
 
 USER node
 
 CMD ["npm", "run", "dev"]
-
