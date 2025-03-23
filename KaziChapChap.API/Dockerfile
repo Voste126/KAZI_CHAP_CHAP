@@ -1,8 +1,8 @@
 # Stage 1: Base runtime image
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
 WORKDIR /app
-EXPOSE 8080
-ENV ASPNETCORE_URLS=http://+:8080
+EXPOSE 8012
+ENV ASPNETCORE_URLS=http://+:8012
 USER app
 
 # Stage 2: Build environment
