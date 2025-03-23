@@ -8,15 +8,13 @@ USER app
 # Stage 2: Build environment
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG configuration=Release
-
-# We'll copy the entire repository so the other projects are present
 WORKDIR /src
 
-# Go up one directory to copy everything (assuming Dockerfile is in KaziChapChap.API)
-COPY ../ . 
+# Copy the entire repo into /src
+# (We can do this because our build context is the repo root)
+COPY . .  
 
-# Restore the entire solution that references all subprojects
-# e.g., if your main solution is "KAZI_CHAP_CHAP.sln"
+# Restore the solution from the repo root
 RUN dotnet restore "KAZI_CHAP_CHAP.sln"
 
 # Build the solution
@@ -28,15 +26,11 @@ ARG configuration=Release
 WORKDIR /src
 RUN dotnet publish "KAZI_CHAP_CHAP.sln" -c $configuration -o /app/publish /p:UseAppHost=false
 
-# Stage 4: Final
+# Stage 4: Final runtime image
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
 ENTRYPOINT ["dotnet", "KaziChapChap.API.dll"]
-
-# Build command (example):
-# docker build -f KaziChapChap.API/Dockerfile -t kazichapchap-api .
-# docker run -d -p 5181:5181 --name my-api -e ASPNETCORE_ENVIRONMENT=Development kazichapchap-api
 
 #docker build -f KaziChapChap.API/Dockerfile -t kazichapchap-api .
 #docker run -d -p 5181:5181 --name my-api -e ASPNETCORE_ENVIRONMENT=Development kazichapchap-api
