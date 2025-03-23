@@ -1,7 +1,24 @@
+// import { defineConfig } from 'vite'
+// import react from '@vitejs/plugin-react'
+
+// // https://vite.dev/config/
+// export default defineConfig({
+//   plugins: [react()],
+// })
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-// https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  server: {
+    // Listen on all interfaces
+    host: '0.0.0.0',
+    // Use port 8080 for OpenShift/Knative
+    port: 8080,
+    // Permit requests from the specified host
+    allowedHosts: [
+      'kazi-chap-chap-sa-3118-dev.apps.rm2.thpm.p1.openshiftapps.com'
+    ]
+  }
 })
+
