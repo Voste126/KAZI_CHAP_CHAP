@@ -1,32 +1,34 @@
-# Stage 1: Base runtime image
+# Stage 1: Base runtime
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
 WORKDIR /app
 EXPOSE 5181
 ENV ASPNETCORE_URLS=http://+:5181
 USER app
 
-# Stage 2: Build the application
-FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+# Stage 2: Build environment
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG configuration=Release
+
+# We'll copy the entire repository so the other projects are present
 WORKDIR /src
 
-# Copy the entire repository (so we have the .csproj in /src/KaziChapChap.API)
-COPY . . 
+# Go up one directory to copy everything (assuming Dockerfile is in KaziChapChap.API)
+COPY ../ . 
 
-# Restore dependencies using the API project file
-# (Remove the "KaziChapChap.API/" prefix so the .csproj is found at /src/KaziChapChap.API.csproj)
-RUN dotnet restore "KaziChapChap.API.csproj"
+# Restore the entire solution that references all subprojects
+# e.g., if your main solution is "KAZI_CHAP_CHAP.sln"
+RUN dotnet restore "KAZI_CHAP_CHAP.sln"
 
-# Build the project (no need to change WORKDIR, just reference the .csproj again)
-RUN dotnet build "KaziChapChap.API.csproj" -c $configuration -o /app/build
+# Build the solution
+RUN dotnet build "KAZI_CHAP_CHAP.sln" -c $configuration -o /app/build
 
-# Stage 3: Publish the application
+# Stage 3: Publish
 FROM build AS publish
 ARG configuration=Release
 WORKDIR /src
-RUN dotnet publish "KaziChapChap.API.csproj" -c $configuration -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "KAZI_CHAP_CHAP.sln" -c $configuration -o /app/publish /p:UseAppHost=false
 
-# Stage 4: Final runtime image
+# Stage 4: Final
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
