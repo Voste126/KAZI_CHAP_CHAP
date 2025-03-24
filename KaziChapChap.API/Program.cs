@@ -217,7 +217,7 @@ public partial class Program
         // Redirect root path "/" to "/swagger"
         app.MapGet("/", context =>
         {
-            context.Response.Redirect("/swagger");
+            context.Response.Redirect("/swagger/index.html/");
             return Task.CompletedTask;
         });
 
@@ -229,7 +229,7 @@ public partial class Program
         // comment out or remove this block:
         if (!app.Environment.IsDevelopment())
         {
-            app.UseHttpsRedirection();
+            // app.UseHttpsRedirection();
         }
 
         // Enable Authentication/Authorization
