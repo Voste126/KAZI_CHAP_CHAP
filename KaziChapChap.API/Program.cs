@@ -246,6 +246,7 @@ public partial class Program
         // ----------------------------------------------------
         // RUN EF MIGRATIONS ON STARTUP (Option A)
         // ----------------------------------------------------
+        // migrations
         using (var scope = app.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<KaziDbContext>();
