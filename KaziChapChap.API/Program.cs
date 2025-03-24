@@ -118,6 +118,7 @@
 //         app.Run();
 //     }
 // }
+
 using System.Text;
 using System.Text.Json.Serialization;
 using KaziChapChap.Core.Services; // Adjust if needed
@@ -146,7 +147,7 @@ public partial class Program
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen();
 
-        // Configure KaziDbContext with your connection string (using Npgsql in this example)
+        // Configure KaziDbContext with your connection string (using Npgsql)
         builder.Services.AddDbContext<KaziDbContext>(options =>
             options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
@@ -158,6 +159,7 @@ public partial class Program
         {
             options.AddPolicy("DevelopmentCorsPolicy", policyBuilder =>
             {
+                // Adjust or add origins if needed (e.g., your OpenShift frontend)
                 policyBuilder.WithOrigins("http://localhost:5173", "https://localhost:5173")
                              .AllowAnyHeader()
                              .AllowAnyMethod()
@@ -194,13 +196,13 @@ public partial class Program
                 {
                     ValidateIssuerSigningKey = true,
                     IssuerSigningKey = new SymmetricSecurityKey(keyBytes),
-                    ValidateIssuer = false,      // For simplicity
-                    ValidateAudience = false,    // For simplicity
+                    ValidateIssuer = false,   // For simplicity
+                    ValidateAudience = false, // For simplicity
                     ClockSkew = TimeSpan.Zero
                 };
             });
 
-        // Optionally configure HTTPS redirection
+        // Optional: Configure HTTPS redirection (remove or comment out if causing redirect loops in OpenShift)
         builder.Services.AddHttpsRedirection(options =>
         {
             options.HttpsPort = 443;
@@ -208,14 +210,13 @@ public partial class Program
 
         var app = builder.Build();
 
-        // Always enable Swagger UI (both dev and production)
+        // Always enable Swagger (both dev and production)
         app.UseSwagger();
         app.UseSwaggerUI();
 
-        // Root path redirect to Swagger
+        // Redirect root path "/" to "/swagger"
         app.MapGet("/", context =>
         {
-            // Instead of redirecting to http://localhost:5181, just redirect to /swagger
             context.Response.Redirect("/swagger");
             return Task.CompletedTask;
         });
@@ -223,7 +224,9 @@ public partial class Program
         // Use CORS
         app.UseCors("DevelopmentCorsPolicy");
 
-        // Only redirect to HTTPS in non-development
+        // Force HTTPS redirection only if not in Development environment
+        // If you're using Edge-terminated TLS in OpenShift and seeing redirect loops,
+        // comment out or remove this block:
         if (!app.Environment.IsDevelopment())
         {
             app.UseHttpsRedirection();
@@ -233,8 +236,8 @@ public partial class Program
         app.UseAuthentication();
         app.UseAuthorization();
 
-        // If you have a custom logging middleware, use it here
-        app.UseMiddleware<RequestResponseLoggingMiddleware>();
+        // If you have a custom logging middleware, use it here (optional)
+        // app.UseMiddleware<RequestResponseLoggingMiddleware>();
 
         // Map controllers and static files
         app.MapControllers();
@@ -244,7 +247,6 @@ public partial class Program
         app.Run();
     }
 }
-
 
 
 
