@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace KaziChapChap.Data.Migrations
 {
     [DbContext(typeof(KaziDbContext))]
-    [Migration("20250317082604_UpdateUserResetFields")]
-    partial class UpdateUserResetFields
+    [Migration("20250324145328_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -145,6 +145,12 @@ namespace KaziChapChap.Data.Migrations
 
                     b.Property<string>("PasswordHash")
                         .HasColumnType("text");
+
+                    b.Property<string>("ResetToken")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("ResetTokenExpiry")
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("UserID");
 
