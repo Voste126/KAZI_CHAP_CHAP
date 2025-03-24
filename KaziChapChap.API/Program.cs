@@ -161,9 +161,9 @@ public partial class Program
             {
                 // Adjust or add origins if needed
                 policyBuilder.WithOrigins("http://localhost:5173", "https://localhost:5173")
-                             .AllowAnyHeader()
-                             .AllowAnyMethod()
-                             .AllowCredentials();
+                            .AllowAnyHeader()
+                            .AllowAnyMethod()
+                            .AllowCredentials();
             });
         });
 
@@ -243,9 +243,20 @@ public partial class Program
         app.UseDefaultFiles();
         app.UseStaticFiles();
 
+        // ----------------------------------------------------
+        // RUN EF MIGRATIONS ON STARTUP (Option A)
+        // ----------------------------------------------------
+        using (var scope = app.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<KaziDbContext>();
+            db.Database.Migrate();
+        }
+
+        // Finally, run the application
         app.Run();
     }
 }
+
 
 
 
