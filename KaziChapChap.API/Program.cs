@@ -33,7 +33,6 @@ public partial class Program
         // Register your authentication service
         builder.Services.AddScoped<IAuthService, AuthService>();
 
-        // Configure CORS policy
         builder.Services.AddCors(options =>
         {
             options.AddPolicy("DevelopmentCorsPolicy", policyBuilder =>
@@ -42,12 +41,14 @@ public partial class Program
                         "http://localhost:5173", 
                         "https://localhost:5173",
                         "http://localhost:8081",
-                        "https://kazi-chap-chap-sa-3118-dev.apps.rm2.thpm.p1.openshiftapps.com")
+                        "https://kazi-chap-chap-sa-3118-dev.apps.rm2.thpm.p1.openshiftapps.com",
+                        "https://kazi-chap-chap-app-sa-3118-dev.apps.rm2.thpm.p1.openshiftapps.com")
                     .AllowAnyHeader()
                     .AllowAnyMethod()
                     .AllowCredentials();
             });
         });
+
 
 
         // Configure JWT Authentication
