@@ -9,10 +9,7 @@ export default defineConfig({
     // Use port 8080 for OpenShift/Knative
     port: 8080,
     // Permit requests from the specified hosts
-    allowedHosts: [
-    //allowed hosts
-      '*',
-    ]
+    allowedHosts: ['*']
   }
 })
 
