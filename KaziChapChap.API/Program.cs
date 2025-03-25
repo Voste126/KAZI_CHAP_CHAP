@@ -159,13 +159,16 @@ public partial class Program
         {
             options.AddPolicy("DevelopmentCorsPolicy", policyBuilder =>
             {
-                // Adjust or add origins if needed
-                policyBuilder.WithOrigins("http://localhost:5173", "https://localhost:5173")
-                            .AllowAnyHeader()
-                            .AllowAnyMethod()
-                            .AllowCredentials();
+                policyBuilder.WithOrigins(
+                        "http://localhost:5173", 
+                        "https://localhost:5173",
+                        "https://kazi-chap-chap-sa-3118-dev.apps.rm2.thpm.p1.openshiftapps.com")
+                    .AllowAnyHeader()
+                    .AllowAnyMethod()
+                    .AllowCredentials();
             });
         });
+
 
         // Configure JWT Authentication
         builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
