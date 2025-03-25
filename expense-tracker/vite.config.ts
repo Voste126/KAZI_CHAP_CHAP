@@ -10,6 +10,7 @@ export default defineConfig({
     port: 8080,
     // Permit requests from the specified hosts
     allowedHosts: [
+    //allowed hosts
       '*',
     ]
   }
