@@ -10,7 +10,10 @@ export default defineConfig({
     port: 8080,
     // Permit requests from the specified hosts
     allowedHosts: [
-      'kazi-chap-chap-backend-sa-3118-dev.apps.rm2.thpm.p1.openshiftapps.com'  // Add the backend host here
+      'kazi-chap-chap-backend-sa-3118-dev.apps.rm2.thpm.p1.openshiftapps.com',  // Add the backend host here
+      //localhost:5181
+      'http://localhost:5181',
+      'http://localhost:8081'
     ]
   }
 })

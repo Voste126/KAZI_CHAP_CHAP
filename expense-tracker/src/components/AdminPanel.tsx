@@ -31,6 +31,9 @@ import {
   FormControlLabel,
   FormLabel,
   LinearProgress,
+  
+  InputAdornment,
+  IconButton, 
 } from '@mui/material';
 import {
   ResponsiveContainer,
@@ -55,6 +58,8 @@ import {
   Radar,
 } from 'recharts';
 import API_URL from '../utils/config';
+import Visibility from '@mui/icons-material/Visibility';
+import VisibilityOff from '@mui/icons-material/VisibilityOff';
 
 // Theme colors
 const themeColors = {
@@ -106,6 +111,7 @@ const AdminPanel: React.FC<{ token: string }> = ({ token }) => {
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   // Analytics filter state – "all" or a specific userID
   const [analyticsUser, setAnalyticsUser] = useState<number | "all">("all");
@@ -955,17 +961,66 @@ const AdminPanel: React.FC<{ token: string }> = ({ token }) => {
                 variant="outlined"
               />
               {!(formData as User).userID && (
-                <TextField
-                  label="Password"
-                  type="password"
-                  fullWidth
-                  value={(formData as Partial<User>).password || ''}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  variant="outlined"
-                />
+                <>
+                  <TextField
+                    label="Password"
+                    type={showPassword ? 'text' : 'password'}
+                    fullWidth
+                    value={(formData as Partial<User>).password || ''}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    variant="outlined"
+                    error={
+                      !!(formData as Partial<User>).password &&
+                      !(
+                        ((formData as Partial<User>).password ?? '').length >= 8 &&
+                        /[a-z]/.test((formData as Partial<User>).password ?? '') &&
+                        /[A-Z]/.test((formData as Partial<User>).password ?? '') &&
+                        /[!@#$%^&*(),.?":{}|<>]/.test((formData as Partial<User>).password ?? '')
+                      )
+                    }
+                    helperText="Password must meet all criteria below."
+                    InputProps={{
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton
+                            onClick={() => setShowPassword((prev) => !prev)}
+                            edge="end"
+                          >
+                            {showPassword ? <VisibilityOff /> : <Visibility />}
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                  {/* Password criteria list */}
+                  {(() => {
+                    const password = (formData as Partial<User>).password || '';
+                    const isMinLength = password.length >= 8;
+                    const hasLower = /[a-z]/.test(password);
+                    const hasUpper = /[A-Z]/.test(password);
+                    const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+                    return (
+                      <Stack spacing={1} sx={{ mt: 1 }}>
+                        <Typography variant="body2" sx={{ color: isMinLength ? 'green' : 'red' }}>
+                          {isMinLength ? '✓' : '✗'} Minimum 8 characters
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: hasLower ? 'green' : 'red' }}>
+                          {hasLower ? '✓' : '✗'} Contains lowercase letter
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: hasUpper ? 'green' : 'red' }}>
+                          {hasUpper ? '✓' : '✗'} Contains uppercase letter
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: hasSpecial ? 'green' : 'red' }}>
+                          {hasSpecial ? '✓' : '✗'} Contains special character
+                        </Typography>
+                      </Stack>
+                    );
+                  })()}
+                </>
               )}
             </Stack>
           )}
+
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseDialog} color="secondary">
