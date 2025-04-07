@@ -42,6 +42,7 @@ public partial class Program
                         "https://localhost:5173",
                         "http://localhost:8081",
                         "https://kazi-chap-chap-sa-3118-dev.apps.rm2.thpm.p1.openshiftapps.com",
+                        "https://kazi-chap-chap-sa-3118-dev.apps.rm2.thpm.p1.openshiftapps.com",
                         "https://kazi-chap-chap-app-sa-3118-dev.apps.rm2.thpm.p1.openshiftapps.com")
                     .AllowAnyHeader()
                     .AllowAnyMethod()
