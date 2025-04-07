@@ -26,13 +26,12 @@ namespace KaziChapChap.Data
             return user;
         }
 
-        public async Task<User> Login(string email, string password)
+        public async Task<User?> Login(string email, string password)
         {
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
             if (user == null || user.PasswordHash == null || !VerifyPassword(user.PasswordHash, password))
             {
-                // In a real application, you might return null or throw a specific exception.
-                throw new UnauthorizedAccessException("Invalid email or password.");
+                return null;
             }
             return user;
         }

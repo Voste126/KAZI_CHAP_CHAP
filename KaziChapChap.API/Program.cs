@@ -115,6 +115,24 @@ public partial class Program
         //     app.UseHttpsRedirection();
         // }
 
+        if (app.Environment.IsDevelopment())
+        {
+            app.UseDeveloperExceptionPage();
+        }
+        else
+        {
+            app.UseExceptionHandler(errorApp =>
+            {
+                errorApp.Run(async context =>
+                {
+                    context.Response.StatusCode = 500;
+                    context.Response.ContentType = "application/json";
+                    // Log the error details internally here
+                    await context.Response.WriteAsync("{\"message\":\"An unexpected error occurred. Please try again later.\"}");
+                });
+            });
+        }
+
         // Enable Authentication/Authorization
         app.UseAuthentication();
         app.UseAuthorization();
