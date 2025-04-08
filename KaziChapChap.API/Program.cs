@@ -32,7 +32,7 @@ public partial class Program
 
         // Register your authentication service
         builder.Services.AddScoped<IAuthService, AuthService>();
-
+        // Alllow only set of URLs origins from the react frontend
         builder.Services.AddCors(options =>
         {
             options.AddPolicy("DevelopmentCorsPolicy", policyBuilder =>
@@ -95,7 +95,7 @@ public partial class Program
 
         var app = builder.Build();
 
-        // Always enable Swagger
+        // Always enable Swagger to see all the documented endpoints 
         app.UseSwagger();
         app.UseSwaggerUI();
 
